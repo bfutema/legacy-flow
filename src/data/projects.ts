@@ -1,0 +1,157 @@
+import type { PrimaryDatabaseType } from './databaseEngines'
+import {
+  addDeletedSeedProjectId,
+  loadDeletedSeedProjectIds,
+} from '../persistence/deletedSeedProjectsStorage'
+import { loadProjectMetadata, removeProjectMetadata } from '../persistence/projectMetadataStorage'
+import { removeModelingFlow } from '../persistence/modelingFlowStorage'
+import {
+  generateUserProjectId,
+  loadUserProjects,
+  removeUserProject,
+  saveUserProjects,
+  type NewProjectInput,
+} from '../persistence/userProjectsStorage'
+
+/** Cor de marca do projeto (hex). Usada no header dos nós de tabela na modelagem. */
+export const DEFAULT_PROJECT_PRIMARY_COLOR = '#3b82f6'
+
+export type Project = {
+  id: string
+  name: string
+  description: string
+  updatedAt: string
+  /** Banco SQL principal usado nas sugestões de tipo na modelagem */
+  primaryDatabase: PrimaryDatabaseType
+  /** Cor primária (hex #RRGGBB) — header das tabelas no diagrama */
+  primaryColor: string
+}
+
+export const PROJECTS: Project[] = [
+  {
+    id: 'ecommerce',
+    name: 'E-commerce',
+    description: 'Catálogo, pedidos e estoque integrados ao ERP.',
+    updatedAt: '2026-04-08',
+    primaryDatabase: 'mysql',
+    primaryColor: '#c2410c',
+  },
+  {
+    id: 'crm',
+    name: 'CRM interno',
+    description: 'Leads, contatos e pipeline comercial.',
+    updatedAt: '2026-04-05',
+    primaryDatabase: 'postgresql',
+    primaryColor: '#8b5cf6',
+  },
+  {
+    id: 'faturamento',
+    name: 'Faturamento',
+    description: 'Notas fiscais, títulos e conciliação bancária.',
+    updatedAt: '2026-03-28',
+    primaryDatabase: 'mssql',
+    primaryColor: '#059669',
+  },
+  {
+    id: 'rh',
+    name: 'Recursos humanos',
+    description: 'Colaboradores, folha e benefícios.',
+    updatedAt: '2026-03-20',
+    primaryDatabase: 'postgresql',
+    primaryColor: '#ea580c',
+  },
+  {
+    id: 'logistica',
+    name: 'Logística',
+    description: 'Rotas, veículos e rastreamento de entregas.',
+    updatedAt: '2026-04-01',
+    primaryDatabase: 'mysql',
+    primaryColor: '#0d9488',
+  },
+  {
+    id: 'bi',
+    name: 'BI & relatórios',
+    description: 'Data warehouse e dashboards executivos.',
+    updatedAt: '2026-04-10',
+    primaryDatabase: 'mssql',
+    primaryColor: '#6366f1',
+  },
+]
+
+/** Valida/normaliza hex #RRGGBB para uso no canvas (fallback seguro). */
+export function normalizeProjectPrimaryColor(raw: string | undefined): string {
+  const s = raw?.trim() ?? ''
+  if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s
+  return DEFAULT_PROJECT_PRIMARY_COLOR
+}
+
+function visibleSeedProjects(): Project[] {
+  const hidden = loadDeletedSeedProjectIds()
+  return PROJECTS.filter((p) => !hidden.has(p.id))
+}
+
+export function getProjectById(id: string): Project | undefined {
+  const seed = visibleSeedProjects().find((p) => p.id === id)
+  if (seed) return seed
+  return loadUserProjects().find((p) => p.id === id)
+}
+
+/** Projetos seed + criados pelo usuário (localStorage). */
+export function getAllProjects(): Project[] {
+  return [...visibleSeedProjects(), ...loadUserProjects()]
+}
+
+const primaryDbStorageKey = (projectId: string) => `flow-primary-db:${projectId}`
+const primaryColorStorageKey = (projectId: string) =>
+  `flow-project-primary-color:${projectId}`
+
+function purgeProjectLocalPersistence(projectId: string): void {
+  removeProjectMetadata(projectId)
+  removeModelingFlow(projectId)
+  try {
+    localStorage.removeItem(primaryDbStorageKey(projectId))
+    localStorage.removeItem(primaryColorStorageKey(projectId))
+  } catch (err) {
+    console.warn('[projeto] Não foi possível limpar chaves locais:', err)
+  }
+}
+
+/** Remove projeto do app: lista do usuário ou demo oculta; apaga diagrama e metadados locais. */
+export function deleteProject(id: string): void {
+  purgeProjectLocalPersistence(id)
+  if (removeUserProject(id)) return
+  if (PROJECTS.some((p) => p.id === id)) {
+    addDeletedSeedProjectId(id)
+  }
+  window.dispatchEvent(new Event('flow-user-projects-changed'))
+}
+
+export function createUserProject(input: NewProjectInput): Project {
+  const id = generateUserProjectId()
+  const project: Project = {
+    id,
+    name: input.name.trim(),
+    description: input.description.trim(),
+    updatedAt: new Date().toISOString(),
+    primaryDatabase: input.primaryDatabase,
+    primaryColor: normalizeProjectPrimaryColor(input.primaryColor),
+  }
+  const list = loadUserProjects()
+  list.push(project)
+  saveUserProjects(list)
+  return project
+}
+
+/** Projeto para exibição (nome, descrição e data mesclados com localStorage, se houver). */
+export function resolveProjectById(id: string): Project | undefined {
+  const base = getProjectById(id)
+  if (!base) return undefined
+  const stored = loadProjectMetadata(id)
+  if (!stored) return base
+  return {
+    ...base,
+    name: stored.name,
+    description: stored.description,
+    updatedAt: stored.updatedAt,
+  }
+}
