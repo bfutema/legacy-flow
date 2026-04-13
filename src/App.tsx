@@ -12,6 +12,7 @@ import { ProjectDetail } from './pages/ProjectDetail'
 import { Projects } from './pages/Projects'
 import { Allocations } from './pages/Allocations'
 import { Reports } from './pages/Reports'
+import { TaskBoard } from './pages/TaskBoard'
 import { EditUser } from './pages/EditUser'
 import { NewUser } from './pages/NewUser'
 import { UserProfile } from './pages/UserProfile'
@@ -59,6 +60,7 @@ export default function App() {
               />
               <Route path="/reports" element={<Reports />} />
               <Route path="/allocations" element={<Allocations />} />
+              <Route path="/tasks" element={<TaskBoard />} />
               <Route path="/users" element={<Users />} />
               <Route path="/users/new" element={<NewUser />} />
               <Route path="/users/:userId/edit" element={<EditUser />} />
@@ -86,6 +88,10 @@ export default function App() {
               <Route
                 path="/alocacoes"
                 element={<Navigate to="/allocations" replace />}
+              />
+              <Route
+                path="/tarefas"
+                element={<Navigate to="/tasks" replace />}
               />
             </Route>
           </Route>

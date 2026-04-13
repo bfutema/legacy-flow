@@ -1,4 +1,5 @@
 import styled, { css } from 'styled-components'
+import { ADMIN_CONTENT_GUTTER_X } from './adminShellTokens'
 
 export const Shell = styled.div`
   display: flex;
@@ -49,6 +50,6 @@ export const ContentInner = styled.div<{ $flush?: boolean }>`
           min-height: 0;
           overflow-y: auto;
           overflow-x: hidden;
-          padding: 1.5rem clamp(1rem, 3vw, 2rem) 2.5rem;
+          padding: 1.5rem ${ADMIN_CONTENT_GUTTER_X} 2.5rem;
         `}
 `

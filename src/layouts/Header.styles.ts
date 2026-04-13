@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { ADMIN_HEADER_BAR_HEIGHT } from './adminShellTokens'
+import { ADMIN_CONTENT_GUTTER_X, ADMIN_HEADER_BAR_HEIGHT } from './adminShellTokens'
 
 export const Bar = styled.header`
   position: sticky;
@@ -14,7 +14,7 @@ export const Bar = styled.header`
   height: ${ADMIN_HEADER_BAR_HEIGHT};
   min-height: ${ADMIN_HEADER_BAR_HEIGHT};
   flex-shrink: 0;
-  padding: 0.75rem clamp(1rem, 3vw, 2rem);
+  padding: 0.75rem ${ADMIN_CONTENT_GUTTER_X};
   background: ${({ theme }) => theme.headerBg};
   backdrop-filter: blur(10px);
   border-bottom: 1px solid ${({ theme }) => theme.border};

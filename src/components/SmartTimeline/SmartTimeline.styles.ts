@@ -382,7 +382,8 @@ export const GanttLaneUserRow = styled.div`
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 0.35rem 0.45rem 0.35rem 0.75rem;
+  padding: 0.35rem 0.45rem 0.35rem
+    calc(0.75rem + ${TIMELINE_UI.laneUserExtraIndentPx}px);
   min-height: ${TIMELINE_UI.userRowHeight}px;
 
   @media (hover: hover) and (pointer: fine) {

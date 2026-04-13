@@ -1,4 +1,5 @@
 import styled, { css, keyframes } from 'styled-components'
+import { ADMIN_CONTENT_GUTTER_X } from '../layouts/adminShellTokens'
 
 const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
@@ -59,9 +60,10 @@ export const TopStrip = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem 1.25rem;
-  padding: 0.85rem clamp(1rem, 2.5vw, 1.5rem);
+  padding: 0.85rem ${ADMIN_CONTENT_GUTTER_X};
   border-bottom: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.surface};
+  background: ${({ theme }) =>
+    theme.mode === 'dark' ? theme.bg : theme.surface};
   ${enter(fadeUp, '0.44s', '0s')}
 `
 
@@ -136,9 +138,10 @@ export const FiltersStrip = styled.div`
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem clamp(1rem, 2.5vw, 1.5rem) 0.85rem;
+  padding: 0.75rem ${ADMIN_CONTENT_GUTTER_X} 0.85rem;
   border-bottom: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.surface};
+  background: ${({ theme }) =>
+    theme.mode === 'dark' ? theme.bg : theme.surface};
   ${enter(fadeUp, '0.44s', '0.07s')}
 `
 

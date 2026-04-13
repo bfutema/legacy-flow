@@ -11,6 +11,8 @@ export type StoredProjectRow = {
   updatedAt: string
   primaryDatabase: PrimaryDatabaseType
   primaryColor: string
+  timelineStartDate?: string
+  timelineEndDate?: string
 }
 
 type Payload = {
@@ -21,16 +23,21 @@ type Payload = {
 function isProjectShape(x: unknown): x is StoredProjectRow {
   if (!x || typeof x !== 'object') return false
   const p = x as Record<string, unknown>
-  return (
-    typeof p.id === 'string' &&
-    typeof p.name === 'string' &&
-    typeof p.description === 'string' &&
-    typeof p.updatedAt === 'string' &&
-    (p.primaryDatabase === 'mysql' ||
-      p.primaryDatabase === 'postgresql' ||
-      p.primaryDatabase === 'mssql') &&
-    typeof p.primaryColor === 'string'
-  )
+  if (
+    typeof p.id !== 'string' ||
+    typeof p.name !== 'string' ||
+    typeof p.description !== 'string' ||
+    typeof p.updatedAt !== 'string' ||
+    (p.primaryDatabase !== 'mysql' &&
+      p.primaryDatabase !== 'postgresql' &&
+      p.primaryDatabase !== 'mssql') ||
+    typeof p.primaryColor !== 'string'
+  ) {
+    return false
+  }
+  if (p.timelineStartDate != null && typeof p.timelineStartDate !== 'string') return false
+  if (p.timelineEndDate != null && typeof p.timelineEndDate !== 'string') return false
+  return true
 }
 
 export function loadUserProjects(): StoredProjectRow[] {
@@ -72,4 +79,7 @@ export type NewProjectInput = {
   description: string
   primaryDatabase: PrimaryDatabaseType
   primaryColor: string
+  /** YYYY-MM-DD — só persistidos se início e fim forem informados */
+  timelineStartDate?: string
+  timelineEndDate?: string
 }

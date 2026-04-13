@@ -13,8 +13,9 @@ function readCollapsed(): boolean {
 
 export function AdminLayout() {
   const { pathname } = useLocation()
+  const normalizedPath = pathname.replace(/\/$/, '') || '/'
   const contentFlush =
-    pathname.replace(/\/$/, '') === '/allocations'
+    normalizedPath === '/allocations' || normalizedPath === '/tasks'
   const [collapsed, setCollapsed] = useState(readCollapsed)
 
   const toggleSidebar = useCallback(() => {

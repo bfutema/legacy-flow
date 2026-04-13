@@ -41,6 +41,12 @@ const iconAlocacoes = (
   </svg>
 )
 
+const iconKanban = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 4h4v16H4V4zm8 3h4v13h-4V7zm8 5h4v8h-4v-8z" />
+  </svg>
+)
+
 type Props = {
   collapsed: boolean
 }
@@ -67,6 +73,10 @@ export function Sidebar({ collapsed }: Props) {
         <SidebarLink $collapsed={collapsed} to="/allocations">
           <NavIcon>{iconAlocacoes}</NavIcon>
           <NavLabel $collapsed={collapsed}>Timeline</NavLabel>
+        </SidebarLink>
+        <SidebarLink $collapsed={collapsed} to="/tasks">
+          <NavIcon>{iconKanban}</NavIcon>
+          <NavLabel $collapsed={collapsed}>Tarefas</NavLabel>
         </SidebarLink>
         <SidebarLink $collapsed={collapsed} to="/reports">
           <NavIcon>{iconRel}</NavIcon>

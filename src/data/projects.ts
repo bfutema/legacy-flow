@@ -25,6 +25,9 @@ export type Project = {
   primaryDatabase: PrimaryDatabaseType
   /** Cor primária (hex #RRGGBB) — header das tabelas no diagrama */
   primaryColor: string
+  /** Período opcional (YYYY-MM-DD) para exibição na Timeline quando não há barras */
+  timelineStartDate?: string
+  timelineEndDate?: string
 }
 
 export const PROJECTS: Project[] = [
@@ -135,6 +138,12 @@ export function createUserProject(input: NewProjectInput): Project {
     updatedAt: new Date().toISOString(),
     primaryDatabase: input.primaryDatabase,
     primaryColor: normalizeProjectPrimaryColor(input.primaryColor),
+    ...(input.timelineStartDate && input.timelineEndDate
+      ? {
+          timelineStartDate: input.timelineStartDate,
+          timelineEndDate: input.timelineEndDate,
+        }
+      : {}),
   }
   const list = loadUserProjects()
   list.push(project)

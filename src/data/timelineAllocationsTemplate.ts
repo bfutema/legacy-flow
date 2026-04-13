@@ -5,7 +5,7 @@ import type { MockGanttBar, MockGanttProject, MockGanttUser } from '../component
 import { dateToSerial, serialToLocalDate } from '../components/SmartTimeline/utils/daySerial'
 import { collaboratorColorForUserId } from './collaboratorColors'
 import { getUserById } from './directoryUsers'
-import { getAllProjects, resolveProjectById } from './projects'
+import { getAllProjects, resolveProjectById, type Project } from './projects'
 
 function sd(year: number, monthIndex: number, day: number): number {
   return dateToSerial(new Date(year, monthIndex, day))
@@ -18,6 +18,33 @@ function formatRangeLabel(start: Date, end: Date): string {
     year: 'numeric',
   })
   return `${fmt.format(start)} – ${fmt.format(end)}`
+}
+
+/** Texto na faixa do projeto na timeline quando não há intervalo para exibir. */
+export const TIMELINE_RANGE_NOT_SET = 'Projeto sem prazo definido'
+
+function parseYmdLocal(ymd: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim())
+  if (!m) return null
+  const y = Number(m[1])
+  const mo = Number(m[2]) - 1
+  const d = Number(m[3])
+  const dt = new Date(y, mo, d)
+  return Number.isNaN(dt.getTime()) ? null : dt
+}
+
+/** Rótulo do período na lane quando não há barras Gantt: datas do projeto ou "Não definido". */
+export function projectTimelineRangeLabel(
+  project: Pick<Project, 'timelineStartDate' | 'timelineEndDate'>,
+): string {
+  const s = project.timelineStartDate?.trim()
+  const e = project.timelineEndDate?.trim()
+  if (!s || !e) return TIMELINE_RANGE_NOT_SET
+  const d0 = parseYmdLocal(s)
+  const d1 = parseYmdLocal(e)
+  if (!d0 || !d1) return TIMELINE_RANGE_NOT_SET
+  if (d0.getTime() > d1.getTime()) return TIMELINE_RANGE_NOT_SET
+  return formatRangeLabel(d0, d1)
 }
 
 /** Barras demo por projeto e membro (equivalente ao antigo Polishop/Devstream, espalhado nos seeds). */
@@ -117,12 +144,6 @@ function seedUsersForProject(
   return out
 }
 
-function fallbackRangeLabel(projectUpdatedAt: string): string {
-  const d = new Date(projectUpdatedAt)
-  if (Number.isNaN(d.getTime())) return '—'
-  return formatRangeLabel(d, d)
-}
-
 /**
  * Estado inicial da timeline: um bloco por projeto visível no app,
  * com título/descrição vindos de `resolveProjectById`.
@@ -137,7 +158,7 @@ export function buildAllocationsGanttTemplate(
   return apps.map((p) => {
     const view = resolveProjectById(p.id) ?? p
     const users = seedUsersForProject(p.id, year, month)
-    const rangeFallback = fallbackRangeLabel(view.updatedAt)
+    const rangeFallback = projectTimelineRangeLabel(view)
     return {
       id: p.id,
       title: view.name,

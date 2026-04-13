@@ -15,7 +15,12 @@ import {
   ColorBoxLabel,
   ColorHint,
   ColorRow,
+  DateField,
+  DateInput,
+  DateRow,
   FieldBlock,
+  FieldError,
+  FieldHint,
   Form,
   Label,
   Lead,
@@ -40,12 +45,26 @@ export function NewProject() {
     (typeof PRIMARY_DATABASES)[number]
   >('mysql')
   const [primaryColor, setPrimaryColor] = useState(DEFAULT_PROJECT_PRIMARY_COLOR)
+  const [timelineStart, setTimelineStart] = useState('')
+  const [timelineEnd, setTimelineEnd] = useState('')
+  const [dateError, setDateError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     const n = name.trim()
     if (!n || submitting) return
+    const ts = timelineStart.trim()
+    const te = timelineEnd.trim()
+    if ((ts && !te) || (!ts && te)) {
+      setDateError('Informe data de início e fim juntas, ou deixe os dois em branco.')
+      return
+    }
+    if (ts && te && ts > te) {
+      setDateError('A data de fim deve ser igual ou posterior à de início.')
+      return
+    }
+    setDateError(null)
     setSubmitting(true)
     try {
       const project = createUserProject({
@@ -53,6 +72,9 @@ export function NewProject() {
         description: description.trim(),
         primaryDatabase,
         primaryColor,
+        ...(ts && te
+          ? { timelineStartDate: ts, timelineEndDate: te }
+          : {}),
       })
       navigate(`/projects/${project.id}`, { replace: true })
     } finally {
@@ -65,8 +87,10 @@ export function NewProject() {
       <BackLink to="/projects">← Voltar aos projetos</BackLink>
       <PageTitle>Novo projeto</PageTitle>
       <Lead>
-        Defina nome, descrição, motor SQL e cor. O diagrama inicia com o modelo de
-        referência; alterações ficam salvas neste navegador.
+        Defina nome, descrição, motor SQL e cor. Opcionalmente informe o período do
+        projeto para a Timeline; se não preencher, a faixa mostrará &quot;Não
+        definido&quot; até haver alocações. O diagrama inicia com o modelo de referência;
+        alterações ficam salvas neste navegador.
       </Lead>
       <Form onSubmit={handleSubmit}>
         <FieldBlock>
@@ -90,6 +114,40 @@ export function NewProject() {
             placeholder="Resumo do escopo ou observações."
             rows={4}
           />
+        </FieldBlock>
+        <FieldBlock>
+          <Label>Período na Timeline (opcional)</Label>
+          <FieldHint>
+            Usado no texto de período da linha do projeto quando ainda não há barras de
+            alocação. Deixe vazio ou preencha início e fim.
+          </FieldHint>
+          <DateRow>
+            <DateField>
+              <Label htmlFor="new-project-start">Início</Label>
+              <DateInput
+                id="new-project-start"
+                value={timelineStart}
+                onChange={(e) => {
+                  setTimelineStart(e.target.value)
+                  setDateError(null)
+                }}
+                aria-label="Data de início do projeto na timeline"
+              />
+            </DateField>
+            <DateField>
+              <Label htmlFor="new-project-end">Fim</Label>
+              <DateInput
+                id="new-project-end"
+                value={timelineEnd}
+                onChange={(e) => {
+                  setTimelineEnd(e.target.value)
+                  setDateError(null)
+                }}
+                aria-label="Data de fim do projeto na timeline"
+              />
+            </DateField>
+          </DateRow>
+          {dateError ? <FieldError role="alert">{dateError}</FieldError> : null}
         </FieldBlock>
         <DbSettingRow>
           <DbLabel htmlFor="new-project-db">Motor SQL (sugestões na modelagem)</DbLabel>

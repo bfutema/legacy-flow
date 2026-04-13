@@ -73,6 +73,40 @@ export const TextInput = styled.input`
   }
 `
 
+export const DateRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+`
+
+export const DateField = styled.div`
+  flex: 1;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+`
+
+export const DateInput = styled(TextInput).attrs({ type: 'date' })`
+  min-height: 2.65rem;
+  color-scheme: inherit;
+`
+
+export const FieldHint = styled.p`
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const FieldError = styled.p`
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #dc2626;
+`
+
 export const TextArea = styled.textarea`
   width: 100%;
   min-height: 5rem;

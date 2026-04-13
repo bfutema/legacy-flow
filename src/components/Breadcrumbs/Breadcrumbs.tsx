@@ -13,6 +13,7 @@ const ROUTE_TREE: Record<string, CrumbItem[]> = {
   '/projects': [{ label: 'Projetos' }],
   '/users': [{ label: 'Usuários' }],
   '/allocations': [{ label: 'Timeline' }],
+  '/tasks': [{ label: 'Tarefas' }],
 }
 
 function usersNewCrumbs(): CrumbItem[] {
