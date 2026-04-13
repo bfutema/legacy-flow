@@ -10,8 +10,9 @@ export const lightTheme: DefaultTheme = {
   border: '#e2e8f0',
   primary: '#4f46e5',
   primaryMuted: 'rgba(79, 70, 229, 0.12)',
-  sidebarBg: '#e2e8f0',
-  sidebarActive: 'rgba(79, 70, 229, 0.2)',
+  /** Mesma família do header/cards: faixa clara sobre o fundo cinza da área principal. */
+  sidebarBg: '#ffffff',
+  sidebarActive: 'rgba(79, 70, 229, 0.14)',
   sidebarText: '#0f172a',
   headerBg: 'rgba(255, 255, 255, 0.85)',
   overlay: 'rgba(15, 23, 42, 0.45)',

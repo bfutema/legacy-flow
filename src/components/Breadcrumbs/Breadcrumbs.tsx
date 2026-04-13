@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { getUserById } from '../../data/directoryUsers'
 import { resolveProjectById } from '../../data/projects'
 import { CrumbLink, Current, Nav, Sep } from './Breadcrumbs.styles'
 
@@ -10,6 +11,15 @@ const ROUTE_TREE: Record<string, CrumbItem[]> = {
   /** Cada seção começa pelo próprio nome; o caminho vai “adentrando” nas sub-rotas. */
   '/reports': [{ label: 'Relatórios' }],
   '/projects': [{ label: 'Projetos' }],
+  '/users': [{ label: 'Usuários' }],
+  '/allocations': [{ label: 'Timeline' }],
+}
+
+function usersNewCrumbs(): CrumbItem[] {
+  return [
+    { label: 'Usuários', path: '/users' },
+    { label: 'Novo usuário' },
+  ]
 }
 
 function crumbsForPath(pathname: string): CrumbItem[] {
@@ -21,6 +31,31 @@ function crumbsForPath(pathname: string): CrumbItem[] {
     return [
       { label: 'Projetos', path: '/projects' },
       { label: 'Novo projeto' },
+    ]
+  }
+
+  if (normalized === '/users/new') {
+    return usersNewCrumbs()
+  }
+
+  const userEdit = normalized.match(/^\/users\/([^/]+)\/edit$/)
+  if (userEdit) {
+    const id = userEdit[1]
+    const u = getUserById(id)
+    return [
+      { label: 'Usuários', path: '/users' },
+      { label: u?.name ?? 'Usuário', path: `/users/${id}` },
+      { label: 'Editar' },
+    ]
+  }
+
+  const userProfile = normalized.match(/^\/users\/([^/]+)$/)
+  if (userProfile) {
+    const id = userProfile[1]
+    const u = getUserById(id)
+    return [
+      { label: 'Usuários', path: '/users' },
+      { label: u?.name ?? 'Perfil' },
     ]
   }
 
@@ -55,13 +90,17 @@ function crumbsForPath(pathname: string): CrumbItem[] {
 
 export function Breadcrumbs() {
   const { pathname } = useLocation()
-  const [, setMetaTick] = useState(0)
+  const [refreshTick, setRefreshTick] = useState(0)
   useEffect(() => {
-    const onMeta = () => setMetaTick((n) => n + 1)
-    window.addEventListener('flow-project-meta-changed', onMeta)
-    return () => window.removeEventListener('flow-project-meta-changed', onMeta)
+    const bump = () => setRefreshTick((n) => n + 1)
+    window.addEventListener('flow-project-meta-changed', bump)
+    window.addEventListener('flow-app-users-changed', bump)
+    return () => {
+      window.removeEventListener('flow-project-meta-changed', bump)
+      window.removeEventListener('flow-app-users-changed', bump)
+    }
   }, [])
-  const items = crumbsForPath(pathname)
+  const items = useMemo(() => crumbsForPath(pathname), [pathname, refreshTick])
 
   return (
     <Nav aria-label="Breadcrumb">

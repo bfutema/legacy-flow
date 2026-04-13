@@ -10,7 +10,12 @@ import { Login } from './pages/Login'
 import { NewProject } from './pages/NewProject'
 import { ProjectDetail } from './pages/ProjectDetail'
 import { Projects } from './pages/Projects'
+import { Allocations } from './pages/Allocations'
 import { Reports } from './pages/Reports'
+import { EditUser } from './pages/EditUser'
+import { NewUser } from './pages/NewUser'
+import { UserProfile } from './pages/UserProfile'
+import { Users } from './pages/Users'
 import { ResetPassword } from './pages/ResetPassword'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 
@@ -53,6 +58,11 @@ export default function App() {
                 element={<DatabaseModeling />}
               />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/allocations" element={<Allocations />} />
+              <Route path="/users" element={<Users />} />
+              <Route path="/users/new" element={<NewUser />} />
+              <Route path="/users/:userId/edit" element={<EditUser />} />
+              <Route path="/users/:userId" element={<UserProfile />} />
               <Route
                 path="/projetos"
                 element={<Navigate to="/projects" replace />}
@@ -72,6 +82,10 @@ export default function App() {
               <Route
                 path="/relatorios"
                 element={<Navigate to="/reports" replace />}
+              />
+              <Route
+                path="/alocacoes"
+                element={<Navigate to="/allocations" replace />}
               />
             </Route>
           </Route>

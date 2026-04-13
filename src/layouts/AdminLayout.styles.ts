@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 
 export const Shell = styled.div`
   display: flex;
@@ -21,16 +21,34 @@ export const Main = styled.div`
 export const Content = styled.main`
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 `
 
-export const ContentInner = styled.div`
+export const ContentInner = styled.div<{ $flush?: boolean }>`
   width: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 1.5rem clamp(1rem, 3vw, 2rem) 2.5rem;
   box-sizing: border-box;
+  ${({ $flush }) =>
+    $flush
+      ? css`
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          padding: 0;
+          overflow: hidden;
+        `
+      : css`
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 1.5rem clamp(1rem, 3vw, 2rem) 2.5rem;
+        `}
 `

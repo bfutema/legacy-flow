@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { ConfirmDialogProvider } from '../contexts/ConfirmDialogContext'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
@@ -12,6 +12,9 @@ function readCollapsed(): boolean {
 }
 
 export function AdminLayout() {
+  const { pathname } = useLocation()
+  const contentFlush =
+    pathname.replace(/\/$/, '') === '/allocations'
   const [collapsed, setCollapsed] = useState(readCollapsed)
 
   const toggleSidebar = useCallback(() => {
@@ -29,7 +32,7 @@ export function AdminLayout() {
         <Main>
           <Header onToggleSidebar={toggleSidebar} />
           <Content>
-            <ContentInner>
+            <ContentInner $flush={contentFlush}>
               <Outlet />
             </ContentInner>
           </Content>

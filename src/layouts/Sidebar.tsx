@@ -27,6 +27,20 @@ const iconProjetos = (
   </svg>
 )
 
+const iconUsuarios = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  </svg>
+)
+
+const iconAlocacoes = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 5h7v5H4zM4 14h11v5H4zM13 5h7v5h-7z" />
+  </svg>
+)
+
 type Props = {
   collapsed: boolean
 }
@@ -45,6 +59,14 @@ export function Sidebar({ collapsed }: Props) {
         <SidebarLink $collapsed={collapsed} to="/projects">
           <NavIcon>{iconProjetos}</NavIcon>
           <NavLabel $collapsed={collapsed}>Projetos</NavLabel>
+        </SidebarLink>
+        <SidebarLink $collapsed={collapsed} to="/users">
+          <NavIcon>{iconUsuarios}</NavIcon>
+          <NavLabel $collapsed={collapsed}>Usuários</NavLabel>
+        </SidebarLink>
+        <SidebarLink $collapsed={collapsed} to="/allocations">
+          <NavIcon>{iconAlocacoes}</NavIcon>
+          <NavLabel $collapsed={collapsed}>Timeline</NavLabel>
         </SidebarLink>
         <SidebarLink $collapsed={collapsed} to="/reports">
           <NavIcon>{iconRel}</NavIcon>
