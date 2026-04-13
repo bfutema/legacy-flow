@@ -37,6 +37,7 @@ import {
   GanttProjectLaneStack,
   GanttProjectTitleRow,
   GanttRemoveCollaboratorBtn,
+  GanttStickyHeaderSection,
   GanttHeaderStickyLane,
   GanttGridRowPair,
   GanttScrollArea,
@@ -393,8 +394,9 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
         />
       ) : null}
       <GanttScrollInner $minTrackWidth={totalWidth}>
-        <GanttGridRowPair $minTrackWidth={totalWidth}>
-          <GanttHeaderStickyLane>
+        <GanttStickyHeaderSection>
+          <GanttGridRowPair $minTrackWidth={totalWidth}>
+            <GanttHeaderStickyLane>
             <GanttLaneHeader>Projetos</GanttLaneHeader>
             <GanttLaneMonthNav>
               <GanttMonthBtn
@@ -457,8 +459,9 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
                 </GanttTimeDowCell>
               )
             })}
-          </GanttVirtualTimeTrackSticky>
-        </GanttGridRowPair>
+            </GanttVirtualTimeTrackSticky>
+          </GanttGridRowPair>
+        </GanttStickyHeaderSection>
 
         {projects.map((project) => (
           <Fragment key={project.id}>

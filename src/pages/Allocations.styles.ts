@@ -1,4 +1,48 @@
-import styled from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
+
+const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+const fadeUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`
+
+const chipPop = keyframes`
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+`
+
+const timelineReveal = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`
+
+const enter = (animation: ReturnType<typeof keyframes>, duration: string, delay: string) => css`
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    animation: ${animation} ${duration} ${easeOut} ${delay} both;
+  }
+`
 
 export const AllocationsRoot = styled.div`
   flex: 1;
@@ -18,6 +62,7 @@ export const TopStrip = styled.div`
   padding: 0.85rem clamp(1rem, 2.5vw, 1.5rem);
   border-bottom: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme }) => theme.surface};
+  ${enter(fadeUp, '0.44s', '0s')}
 `
 
 export const PageTitle = styled.h1`
@@ -46,6 +91,11 @@ export const CollaboratorsToggle = styled.button<{ $on: boolean }>`
   font-size: 0.8125rem;
   font-weight: 600;
   color: ${({ theme }) => theme.textMuted};
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.text};
+  }
 
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.primary};
@@ -61,7 +111,9 @@ export const ToggleTrack = styled.span<{ $on: boolean }>`
   border-radius: 999px;
   background: ${({ theme, $on }) =>
     $on ? theme.primary : theme.border};
-  transition: background 0.15s ease;
+  transition:
+    background 0.22s ${easeOut},
+    box-shadow 0.22s ease;
 
   &::after {
     content: '';
@@ -73,7 +125,7 @@ export const ToggleTrack = styled.span<{ $on: boolean }>`
     border-radius: 999px;
     background: #fff;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
-    transition: left 0.15s ease;
+    transition: left 0.22s ${easeOut};
   }
 `
 
@@ -87,6 +139,7 @@ export const FiltersStrip = styled.div`
   padding: 0.75rem clamp(1rem, 2.5vw, 1.5rem) 0.85rem;
   border-bottom: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme }) => theme.surface};
+  ${enter(fadeUp, '0.44s', '0.07s')}
 `
 
 export const FiltersLeft = styled.div`
@@ -106,12 +159,25 @@ export const SearchWrap = styled.div`
   border: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme }) => theme.surfaceHover};
   max-width: 28rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:focus-within {
+    border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.primaryMuted};
+  }
 
   svg {
     flex-shrink: 0;
     width: 1.1rem;
     height: 1.1rem;
     color: ${({ theme }) => theme.textMuted};
+    transition: color 0.2s ease;
+  }
+
+  &:focus-within svg {
+    color: ${({ theme }) => theme.primary};
   }
 `
 
@@ -135,7 +201,7 @@ export const ChipsRow = styled.div`
   gap: 0.35rem;
 `
 
-export const Chip = styled.button`
+export const Chip = styled.button<{ $delayIndex?: number }>`
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -148,9 +214,23 @@ export const Chip = styled.button`
   color: ${({ theme }) => theme.text};
   cursor: pointer;
   font-family: inherit;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ${easeOut};
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: ${chipPop} 0.4s ${easeOut} both;
+    animation-delay: ${({ $delayIndex = 0 }) => 0.14 + $delayIndex * 0.055}s;
+  }
 
   &:hover {
     background: ${({ theme }) => theme.surfaceHover};
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 
   &:focus-visible {
@@ -163,6 +243,7 @@ export const ChipRemove = styled.span`
   font-size: 0.85rem;
   line-height: 1;
   color: ${({ theme }) => theme.textMuted};
+  transition: color 0.15s ease;
 `
 
 export const FiltersRight = styled.div`
@@ -192,11 +273,16 @@ export const ScaleBtn = styled.button<{ $active: boolean }>`
   background: ${({ theme, $active }) =>
     $active ? theme.primary : 'transparent'};
   transition:
-    background 0.12s ease,
-    color 0.12s ease;
+    background 0.2s ${easeOut},
+    color 0.2s ${easeOut},
+    transform 0.18s ${easeOut};
 
   &:hover {
     color: ${({ theme, $active }) => ($active ? '#fff' : theme.text)};
+  }
+
+  &:active {
+    transform: scale(0.96);
   }
 
   &:focus-visible {
@@ -218,15 +304,28 @@ export const DateButton = styled.button`
   color: ${({ theme }) => theme.text};
   cursor: pointer;
   font-family: inherit;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.18s ${easeOut};
 
   svg {
     width: 1rem;
     height: 1rem;
     color: ${({ theme }) => theme.textMuted};
+    transition: color 0.2s ease;
   }
 
   &:hover {
     background: ${({ theme }) => theme.surfaceHover};
+
+    svg {
+      color: ${({ theme }) => theme.text};
+    }
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 
   &:focus-visible {
@@ -241,4 +340,13 @@ export const TimelineFill = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
+
+  & > * {
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      animation: ${timelineReveal} 0.52s ${easeOut} 0.13s both;
+    }
+  }
 `

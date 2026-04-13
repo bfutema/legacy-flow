@@ -79,10 +79,11 @@ export function Allocations() {
           </SearchWrap>
           {chips.length > 0 ? (
             <ChipsRow>
-              {chips.map((c) => (
+              {chips.map((c, i) => (
                 <Chip
                   key={c}
                   type="button"
+                  $delayIndex={i}
                   onClick={() => removeChip(c)}
                   aria-label={`Remover filtro ${c}`}
                 >

@@ -24,11 +24,16 @@ export const GanttBarRoot = styled.div<{
 export const GanttBarFill = styled.div<{ $color: string; $dragging: boolean }>`
   position: absolute;
   inset: 0;
+  box-sizing: border-box;
   border-radius: 6px;
-  background: ${({ $color }) => $color};
+  border: 1px solid ${({ $color }) => $color};
+  /* Mesma lógica do botão Excluir: borda na cor “cheia”, preenchimento mais escuro na mesma tonalidade. */
+  background: ${({ $color }) =>
+    `color-mix(in srgb, ${$color} 70%, black)`};
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
   transition: ${({ $dragging }) =>
     $dragging ? 'none' : 'filter 0.2s ease, box-shadow 0.2s ease'};
+  cursor: pointer;
 
   ${({ theme }) =>
     theme.mode === 'dark'
@@ -42,7 +47,7 @@ export const GanttBarFill = styled.div<{ $color: string; $dragging: boolean }>`
       ${({ $dragging, theme }) =>
         !$dragging &&
         css`
-          filter: brightness(1.12) saturate(1.05);
+          filter: brightness(1.1) saturate(1.06);
           box-shadow:
             0 4px 12px
               ${theme.mode === 'dark'
@@ -50,8 +55,8 @@ export const GanttBarFill = styled.div<{ $color: string; $dragging: boolean }>`
                 : 'rgba(15, 23, 42, 0.18)'},
             0 0 0 1px
               ${theme.mode === 'dark'
-                ? 'rgba(255, 255, 255, 0.12)'
-                : 'rgba(255, 255, 255, 0.28)'}
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(255, 255, 255, 0.22)'}
               inset;
         `}
     }

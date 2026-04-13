@@ -82,6 +82,18 @@ export const GanttGridRowPair = styled.div<{ $minTrackWidth: number }>`
   ${({ $minTrackWidth }) => ganttRowGrid($minTrackWidth)}
 `
 
+/**
+ * Envolve só a régua (Projetos + datas): sticky vertical no scroll da timeline.
+ * Sticky nos filhos do grid por linha costuma falhar; o bloco inteiro gruda no topo.
+ */
+export const GanttStickyHeaderSection = styled.div`
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  align-self: stretch;
+  background: ${({ theme }) => theme.surface};
+`
+
 export const GanttStickyLane = styled.div`
   ${laneSticky};
   display: flex;
@@ -92,10 +104,9 @@ export const GanttStickyLane = styled.div`
   min-height: ${TIMELINE_UI.headerLaneMinHeight}px;
 `
 
-/** Coluna esquerda da régua: acima das faixas de dados ao rolar na vertical. */
+/** Coluna esquerda da régua: sticky horizontal (`left`); vertical vem de GanttStickyHeaderSection. */
 export const GanttHeaderStickyLane = styled(GanttStickyLane)`
   z-index: 18;
-  top: 0;
   border-bottom: 2px solid ${({ theme }) => theme.chartGrid};
 `
 
@@ -493,10 +504,8 @@ export const GanttVirtualTimeTrack = styled.div<{ $width: number }>`
   }
 `
 
-/** Régua de datas da primeira linha: sticky vertical alinhado à coluna “Projetos”. */
+/** Régua de datas da primeira linha (sticky vertical no wrapper GanttStickyHeaderSection). */
 export const GanttVirtualTimeTrackSticky = styled(GanttVirtualTimeTrack)`
-  position: sticky;
-  top: 0;
   z-index: 16;
 `
 
