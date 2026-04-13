@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { HiCalendarDays, HiMagnifyingGlass } from 'react-icons/hi2'
 import { SmartTimeline, type TimelineScale } from '../components/SmartTimeline'
+import { getAllProjects, resolveProjectById } from '../data/projects'
 import {
   AllocationsRoot,
   Chip,
@@ -22,11 +23,27 @@ import {
   TopStrip,
 } from './Allocations.styles'
 
-const DEFAULT_CHIPS = ['Polishop', 'Devstream']
+function initialFilterChips(): string[] {
+  return getAllProjects()
+    .slice(0, 2)
+    .map((p) => resolveProjectById(p.id)?.name ?? p.name)
+}
 
 export function Allocations() {
   const [collaboratorsOn, setCollaboratorsOn] = useState(true)
-  const [chips, setChips] = useState<string[]>(DEFAULT_CHIPS)
+  const [chips, setChips] = useState<string[]>(initialFilterChips)
+
+  useEffect(() => {
+    const onList = () =>
+      setChips((c) => {
+        const names = new Set(
+          getAllProjects().map((p) => resolveProjectById(p.id)?.name ?? p.name),
+        )
+        return c.filter((x) => names.has(x))
+      })
+    window.addEventListener('flow-user-projects-changed', onList)
+    return () => window.removeEventListener('flow-user-projects-changed', onList)
+  }, [])
   const [scale, setScale] = useState<TimelineScale>('day')
 
   function removeChip(label: string) {

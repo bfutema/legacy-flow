@@ -7,8 +7,10 @@ export const TIMELINE_UI = {
   /** Largura de cada dia na régua (px). */
   dayColumnWidth: 44,
   userRowHeight: 48,
-  /** Altura das barras Gantt e do quadrado de cor na coluna do colaborador. */
+  /** Altura das barras Gantt na grade. */
   ganttBarThickness: 26,
+  /** Quadrado de cor na lane (input) — um pouco menor que a barra. */
+  laneColorSwatchSize: 22,
   projectRowHeight: 52,
   headerLaneMinHeight: 72,
   /** Colunas extras renderizadas fora da viewport (cada lado). */

@@ -1,5 +1,24 @@
-import { Fragment, useCallback, useEffect, useState } from 'react'
 import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { createPortal } from 'react-dom'
+import { HiUserPlus, HiXMark } from 'react-icons/hi2'
+import {
+  GanttAllocEmpty,
+  GanttAllocList,
+  GanttAllocPopover,
+  GanttAllocPopoverHeader,
+  GanttAllocSearch,
+  GanttAllocUserBtn,
+  GanttAllocUserEmail,
+  GanttAllocUserName,
+  GanttAllocateTriggerBtn,
   GanttDayBgCell,
   GanttLaneHeader,
   GanttLaneMonthNav,
@@ -16,6 +35,8 @@ import {
   GanttMonthLabel,
   GanttProjectLaneRow,
   GanttProjectLaneStack,
+  GanttProjectTitleRow,
+  GanttRemoveCollaboratorBtn,
   GanttHeaderStickyLane,
   GanttGridRowPair,
   GanttScrollArea,
@@ -30,7 +51,10 @@ import {
 } from '../SmartTimeline.styles'
 import { TIMELINE_UI } from '../constants'
 import { useVirtualInfiniteTimelineScroll } from '../hooks/useVirtualInfiniteTimelineScroll'
-import type { MockGanttBar, MockGanttProject } from '../mockData'
+import { collaboratorColorForUserId } from '../../../data/collaboratorColors'
+import { computeGanttRangeLabel } from '../../../data/timelineAllocationsTemplate'
+import { getDirectoryUsers, getUserById } from '../../../data/directoryUsers'
+import type { MockGanttBar, MockGanttProject, MockGanttUser } from '../mockData'
 import {
   ALLOCATIONS_GANTT_STORAGE_KEY,
   loadAllocationsGanttProjects,
@@ -74,6 +98,135 @@ function toInputColorValue(color: string): string {
   return '#808080'
 }
 
+function defaultBarsForNewAllocation(): MockGanttBar[] {
+  const t = dateToSerial(new Date())
+  return [{ startSerial: t, endSerial: t + 5 }]
+}
+
+function popoverCoords(anchor: DOMRect) {
+  const m = 8
+  const w = Math.min(288, window.innerWidth - 2 * m)
+  let left = anchor.left
+  left = Math.max(m, Math.min(left, window.innerWidth - w - m))
+  const est = 260
+  let top = anchor.bottom + m
+  if (top + est > window.innerHeight - m) {
+    top = Math.max(m, anchor.top - est - m)
+  }
+  return { top, left, width: w }
+}
+
+function CollaboratorAllocPopover({
+  anchor,
+  excludedIds,
+  onPick,
+  onClose,
+}: {
+  anchor: DOMRect
+  excludedIds: string[]
+  onPick: (userId: string) => void
+  onClose: () => void
+}) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const [q, setQ] = useState('')
+  const [pos, setPos] = useState(() => popoverCoords(anchor))
+
+  const excludedKey = excludedIds.join(',')
+
+  useLayoutEffect(() => {
+    setPos(popoverCoords(anchor))
+ }, [anchor])
+
+  useEffect(() => {
+    const onResize = () => setPos(popoverCoords(anchor))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [anchor])
+
+  useEffect(() => {
+    const onScroll = () => onClose()
+    window.addEventListener('scroll', onScroll, true)
+    return () => window.removeEventListener('scroll', onScroll, true)
+  }, [onClose])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  useEffect(() => {
+    let removeDoc: (() => void) | undefined
+    const t = window.setTimeout(() => {
+      const onDoc = (ev: MouseEvent) => {
+        if (!rootRef.current || rootRef.current.contains(ev.target as Node))
+          return
+        onClose()
+      }
+      document.addEventListener('mousedown', onDoc)
+      removeDoc = () => document.removeEventListener('mousedown', onDoc)
+    }, 0)
+    return () => {
+      window.clearTimeout(t)
+      removeDoc?.()
+    }
+  }, [onClose])
+
+  const users = useMemo(() => {
+    const excluded = new Set(excludedIds)
+    const list = getDirectoryUsers().filter((u) => u.status === 'active')
+    const qt = q.trim().toLowerCase()
+    const filtered = !qt
+      ? list
+      : list.filter(
+          (u) =>
+            u.name.toLowerCase().includes(qt) ||
+            u.email.toLowerCase().includes(qt),
+        )
+    return filtered.filter((u) => !excluded.has(u.id))
+  }, [q, excludedKey])
+
+  return createPortal(
+    <GanttAllocPopover
+      ref={rootRef}
+      style={{ top: pos.top, left: pos.left, width: pos.width }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Alocar colaborador ao projeto"
+    >
+      <GanttAllocPopoverHeader>Alocar colaborador</GanttAllocPopoverHeader>
+      <GanttAllocSearch
+        type="search"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Buscar por nome ou e-mail"
+        autoFocus aria-label="Buscar usuário da plataforma"
+      />
+      <GanttAllocList>
+        {users.length === 0 ? (
+          <GanttAllocEmpty>
+            Nenhum usuário ativo disponível ou já alocado neste projeto.
+          </GanttAllocEmpty>
+        ) : (
+          users.map((u) => (
+            <GanttAllocUserBtn
+              key={u.id}
+              type="button"
+              onClick={() => onPick(u.id)}
+            >
+              <GanttAllocUserName>{u.name}</GanttAllocUserName>
+              <GanttAllocUserEmail>{u.email}</GanttAllocUserEmail>
+            </GanttAllocUserBtn>
+          ))
+        )}
+      </GanttAllocList>
+    </GanttAllocPopover>,
+    document.body,
+  )
+}
+
 export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
   const dayWidth = dayWidthProp ?? dayWidthForScale(scale)
   const [projects, setProjects] = useState<MockGanttProject[]>(
@@ -85,8 +238,17 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
       if (e.key !== ALLOCATIONS_GANTT_STORAGE_KEY) return
       setProjects(loadAllocationsGanttProjects())
     }
+    const refresh = () => setProjects(loadAllocationsGanttProjects())
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener('flow-user-projects-changed', refresh)
+    window.addEventListener('flow-project-meta-changed', refresh)
+    window.addEventListener('flow-app-users-changed', refresh)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('flow-user-projects-changed', refresh)
+      window.removeEventListener('flow-project-meta-changed', refresh)
+      window.removeEventListener('flow-app-users-changed', refresh)
+    }
   }, [])
 
   const onBarChange = useCallback(
@@ -99,14 +261,16 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
       setProjects((ps) => {
         const nextProjects = ps.map((p) => {
           if (p.id !== projectId) return p
+          const users = p.users.map((u) => {
+            if (u.id !== userId) return u
+            const bars = u.bars.slice()
+            bars[barIndex] = next
+            return { ...u, bars }
+          })
           return {
             ...p,
-            users: p.users.map((u) => {
-              if (u.id !== userId) return u
-              const bars = u.bars.slice()
-              bars[barIndex] = next
-              return { ...u, bars }
-            }),
+            users,
+            rangeLabel: computeGanttRangeLabel(users, p.rangeLabel),
           }
         })
         saveAllocationsGanttProjects(nextProjects)
@@ -130,6 +294,55 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
         })
         saveAllocationsGanttProjects(nextProjects)
         return nextProjects
+      })
+    },
+    [],
+  )
+
+  const [allocPicker, setAllocPicker] = useState<{
+    projectId: string
+    anchor: DOMRect
+  } | null>(null)
+
+  const onAllocateUser = useCallback((projectId: string, platformUserId: string) => {
+    const u = getUserById(platformUserId)
+    if (!u || u.status !== 'active') return
+    const newUser: MockGanttUser = {
+      id: u.id,
+      name: u.name,
+      color: collaboratorColorForUserId(u.id),
+      bars: defaultBarsForNewAllocation(),
+    }
+    setProjects((ps) => {
+      const next = ps.map((p) => {
+        if (p.id !== projectId) return p
+        if (p.users.some((x) => x.id === platformUserId)) return p
+        const users = [...p.users, newUser]
+        return {
+          ...p,
+          users,
+          rangeLabel: computeGanttRangeLabel(users, p.rangeLabel),
+        }
+      })
+      saveAllocationsGanttProjects(next)
+      return next
+    })
+  }, [])
+
+  const onRemoveCollaborator = useCallback(
+    (projectId: string, userId: string) => {
+      setProjects((ps) => {
+        const next = ps.map((p) => {
+          if (p.id !== projectId) return p
+          const users = p.users.filter((u) => u.id !== userId)
+          return {
+            ...p,
+            users,
+            rangeLabel: computeGanttRangeLabel(users, p.rangeLabel),
+          }
+        })
+        saveAllocationsGanttProjects(next)
+        return next
       })
     },
     [],
@@ -162,8 +375,23 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
     ? Math.round((todaySerial - startSerial) * dayWidth + dayWidth / 2)
     : 0
 
+  const allocExcluded =
+    allocPicker &&
+    projects.find((p) => p.id === allocPicker.projectId)?.users.map((u) => u.id)
+
   return (
     <GanttScrollArea ref={scrollRef} onScroll={onScroll}>
+      {allocPicker && allocExcluded ? (
+        <CollaboratorAllocPopover
+          anchor={allocPicker.anchor}
+          excludedIds={allocExcluded}
+          onPick={(userId) => {
+            onAllocateUser(allocPicker.projectId, userId)
+            setAllocPicker(null)
+          }}
+          onClose={() => setAllocPicker(null)}
+        />
+      ) : null}
       <GanttScrollInner $minTrackWidth={totalWidth}>
         <GanttGridRowPair $minTrackWidth={totalWidth}>
           <GanttHeaderStickyLane>
@@ -237,7 +465,28 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
             <GanttGridRowPair $minTrackWidth={totalWidth}>
               <GanttProjectLaneRow>
                 <GanttProjectLaneStack>
-                  <GanttLaneProjectTitle>{project.title}</GanttLaneProjectTitle>
+                  <GanttProjectTitleRow>
+                    <GanttLaneProjectTitle>{project.title}</GanttLaneProjectTitle>
+                    <GanttAllocateTriggerBtn
+                      type="button"
+                      $open={allocPicker?.projectId === project.id}
+                      title="Alocar colaborador"
+                      aria-label={`Alocar colaborador em ${project.title}`}
+                      aria-expanded={allocPicker?.projectId === project.id}
+                      onClick={(e) => {
+                        const rect = (
+                          e.currentTarget as HTMLButtonElement
+                        ).getBoundingClientRect()
+                        setAllocPicker((prev) =>
+                          prev?.projectId === project.id
+                            ? null
+                            : { projectId: project.id, anchor: rect },
+                        )
+                      }}
+                    >
+                      <HiUserPlus size={15} strokeWidth={2} aria-hidden />
+                    </GanttAllocateTriggerBtn>
+                  </GanttProjectTitleRow>
                   <GanttLaneRange>{project.rangeLabel}</GanttLaneRange>
                 </GanttProjectLaneStack>
               </GanttProjectLaneRow>
@@ -294,6 +543,14 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
                       </GanttLaneUserColorPickerWrap>
                     </GanttLaneUserTextRow>
                   </GanttLaneUserCell>
+                  <GanttRemoveCollaboratorBtn
+                    type="button"
+                    title="Remover colaborador deste projeto"
+                    aria-label={`Remover ${user.name} deste projeto`}
+                    onClick={() => onRemoveCollaborator(project.id, user.id)}
+                  >
+                    <HiXMark size={14} strokeWidth={2} aria-hidden />
+                  </GanttRemoveCollaboratorBtn>
                 </GanttLaneUserRow>
                 <GanttTrackArea $minWidth={totalWidth}>
                   <GanttVirtualRowTrack

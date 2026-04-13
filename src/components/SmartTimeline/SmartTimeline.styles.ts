@@ -164,6 +164,15 @@ export const GanttLaneProjectTitle = styled.div`
   font-size: 0.8125rem;
   font-weight: 700;
   color: ${({ theme }) => theme.text};
+  min-width: 0;
+`
+
+/** Título do projeto + ação discreta (alocar colaborador). */
+export const GanttProjectTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
 `
 
 export const GanttProjectLaneStack = styled.div`
@@ -179,17 +188,113 @@ export const GanttLaneRange = styled.div`
   margin-top: 0.15rem;
 `
 
-export const GanttLaneUserRow = styled.div`
-  ${laneSticky};
-  display: flex;
+export const GanttAllocateTriggerBtn = styled.button<{ $open?: boolean }>`
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
-  padding: 0.35rem 0.75rem;
-  min-height: ${TIMELINE_UI.userRowHeight}px;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.35rem;
+  background: ${({ theme, $open }) =>
+    $open ? theme.primaryMuted : 'transparent'};
+  color: ${({ theme, $open }) => ($open ? theme.primary : theme.textMuted)};
+  cursor: pointer;
+  opacity: ${({ $open }) => ($open ? 1 : 0.65)};
 
-  & > * {
-    flex: 1;
-    min-width: 0;
+  &:hover {
+    opacity: 1;
+    background: ${({ theme }) => theme.surfaceHover};
+    color: ${({ theme }) => theme.primary};
   }
+`
+
+export const GanttAllocPopover = styled.div`
+  position: fixed;
+  z-index: 400;
+  width: min(18rem, calc(100vw - 1.5rem));
+  max-height: min(22rem, calc(100vh - 6rem));
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  box-shadow: ${({ theme }) => theme.shadow};
+  overflow: hidden;
+`
+
+export const GanttAllocPopoverHeader = styled.div`
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.text};
+`
+
+export const GanttAllocSearch = styled.input`
+  margin: 0.45rem 0.65rem 0.35rem;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surfaceHover};
+  color: ${({ theme }) => theme.text};
+
+  &::placeholder {
+    color: ${({ theme }) => theme.textMuted};
+  }
+`
+
+export const GanttAllocList = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.15rem 0.35rem 0.45rem;
+`
+
+export const GanttAllocUserBtn = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.45rem;
+  margin: 0.1rem 0;
+  border: none;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  font: inherit;
+
+  &:hover {
+    background: ${({ theme }) => theme.surfaceHover};
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+`
+
+export const GanttAllocUserName = styled.span`
+  font-size: 0.78rem;
+  font-weight: 600;
+`
+
+export const GanttAllocUserEmail = styled.span`
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const GanttAllocEmpty = styled.div`
+  padding: 0.75rem 0.65rem;
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.textMuted};
+  text-align: center;
 `
 
 export const GanttLaneUserAvatar = styled.span<{ $color: string }>`
@@ -208,10 +313,92 @@ export const GanttLaneUserAvatar = styled.span<{ $color: string }>`
 
 /** Linha do colaborador: ocupa a largura da coluna fixa; nome e swatch nos extremos. */
 export const GanttLaneUserCell = styled.div`
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
+`
+
+/** Remove alocação: sem largura no layout até hover/foco — evita “vão” invisível. */
+export const GanttRemoveCollaboratorBtn = styled.button`
+  flex-shrink: 0;
+  flex-grow: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 0;
+  min-width: 0;
+  height: 1.45rem;
+  margin-left: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: ${({ theme }) => theme.textMuted};
+  cursor: pointer;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    width 0.14s ease,
+    min-width 0.14s ease,
+    margin-left 0.14s ease,
+    opacity 0.12s ease,
+    background 0.12s ease,
+    color 0.12s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.surfaceHover};
+    color: ${({ theme }) => theme.text};
+  }
+
+  &:focus-visible {
+    width: 1.45rem;
+    min-width: 1.45rem;
+    margin-left: 0.2rem;
+    opacity: 1;
+    overflow: visible;
+    pointer-events: auto;
+    outline: 2px solid ${({ theme }) => theme.primary};
+    outline-offset: 1px;
+  }
+`
+
+export const GanttLaneUserRow = styled.div`
+  ${laneSticky};
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0.35rem 0.45rem 0.35rem 0.75rem;
+  min-height: ${TIMELINE_UI.userRowHeight}px;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover ${GanttRemoveCollaboratorBtn} {
+      width: 1.45rem;
+      min-width: 1.45rem;
+      margin-left: 0.2rem;
+      opacity: 0.55;
+      overflow: visible;
+      pointer-events: auto;
+    }
+  }
+
+  @media (hover: none) {
+    ${GanttRemoveCollaboratorBtn} {
+      width: 1.45rem;
+      min-width: 1.45rem;
+      margin-left: 0.2rem;
+      opacity: 0.45;
+      overflow: visible;
+      pointer-events: auto;
+    }
+  }
+
+  & ${GanttRemoveCollaboratorBtn}:is(:hover, :focus-visible) {
+    opacity: 1;
+  }
 `
 
 export const GanttLaneUserTextRow = styled.div`
@@ -233,13 +420,13 @@ export const GanttLaneUserName = styled.span`
   min-width: 0;
 `
 
-/** Mesma altura/largura e raio das barras Gantt. */
+/** Quadrado de cor na lane (espessura da barra na grade em `ganttBarThickness`). */
 export const GanttLaneUserColorSwatch = styled.span<{ $color: string }>`
   display: block;
   flex-shrink: 0;
-  width: ${TIMELINE_UI.ganttBarThickness}px;
-  height: ${TIMELINE_UI.ganttBarThickness}px;
-  border-radius: 6px;
+  width: ${TIMELINE_UI.laneColorSwatchSize}px;
+  height: ${TIMELINE_UI.laneColorSwatchSize}px;
+  border-radius: 5px;
   background: ${({ $color }) => $color};
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
   pointer-events: none;
@@ -256,10 +443,10 @@ export const GanttLaneUserColorSwatch = styled.span<{ $color: string }>`
 export const GanttLaneUserColorPickerWrap = styled.span`
   position: relative;
   flex-shrink: 0;
-  width: ${TIMELINE_UI.ganttBarThickness}px;
-  height: ${TIMELINE_UI.ganttBarThickness}px;
+  width: ${TIMELINE_UI.laneColorSwatchSize}px;
+  height: ${TIMELINE_UI.laneColorSwatchSize}px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 5px;
 
   input[type='color'] {
     position: absolute;
@@ -271,7 +458,7 @@ export const GanttLaneUserColorPickerWrap = styled.span`
     border: none;
     opacity: 0;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 5px;
   }
 
   input[type='color']::-webkit-color-swatch-wrapper {
@@ -280,7 +467,7 @@ export const GanttLaneUserColorPickerWrap = styled.span`
 
   input[type='color']::-webkit-color-swatch {
     border: none;
-    border-radius: 6px;
+    border-radius: 5px;
   }
 `
 

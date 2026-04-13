@@ -1,20 +1,20 @@
+import type { MockGanttProject, MockGanttUser } from '../components/SmartTimeline/mockData'
+import { getUserById } from '../data/directoryUsers'
 import {
-  MOCK_TIMELINE_PROJECTS,
-  type MockGanttBar,
-  type MockGanttProject,
-  type MockGanttUser,
-} from '../components/SmartTimeline/mockData'
+  buildAllocationsGanttTemplate,
+  computeGanttRangeLabel,
+} from '../data/timelineAllocationsTemplate'
 
 export const ALLOCATIONS_GANTT_STORAGE_KEY = 'flow-allocations-gantt-projects'
 
-const VERSION = 2
+const VERSION = 4
 
 type Payload = {
   v: number
   projects: MockGanttProject[]
 }
 
-function isBar(x: unknown): x is MockGanttBar {
+function isBar(x: unknown): x is { startSerial: number; endSerial: number } {
   if (!x || typeof x !== 'object') return false
   const b = x as Record<string, unknown>
   return (
@@ -44,38 +44,37 @@ function isProject(x: unknown): x is MockGanttProject {
   return p.users.every(isUser)
 }
 
-function sameTopology(
-  stored: MockGanttProject[],
-  template: MockGanttProject[],
-): boolean {
-  if (stored.length !== template.length) return false
-  for (let i = 0; i < template.length; i++) {
-    const a = stored[i]
-    const b = template[i]
-    if (!a || !b || a.id !== b.id || a.users.length !== b.users.length)
-      return false
-    for (let j = 0; j < b.users.length; j++) {
-      const au = a.users[j]
-      const bu = b.users[j]
-      if (!au || !bu || au.id !== bu.id || au.bars.length !== bu.bars.length)
-        return false
-    }
-  }
-  return true
-}
-
-/** Mescla rótulos/cores do mock com intervalos salvos. */
-export function mergeGanttProjectsFromStorage(
+/**
+ * Lista de colaboradores do storage é a fonte da verdade (remoções persistem).
+ * Template atualiza título/período base e metadados de seed para ids que ainda existem.
+ */
+function mergeStoredWithTemplate(
   stored: MockGanttProject[],
   template: MockGanttProject[],
 ): MockGanttProject[] {
-  if (!sameTopology(stored, template)) {
-    return structuredClone(template)
-  }
-  return template.map((tp, pi) => ({
-    ...tp,
-    users: tp.users.map((tu, ui) => {
-      const su = stored[pi]!.users[ui]!
+  const storedById = new Map(stored.map((p) => [p.id, p]))
+
+  const withSyncedNames = (users: MockGanttUser[]): MockGanttUser[] =>
+    users.map((u) => {
+      const d = getUserById(u.id)
+      return d ? { ...u, name: d.name } : u
+    })
+
+  return template.map((tp) => {
+    const sp = storedById.get(tp.id)
+    if (!sp) {
+      const fresh = structuredClone(tp)
+      fresh.users = withSyncedNames(fresh.users)
+      return fresh
+    }
+
+    const templateById = new Map(tp.users.map((u) => [u.id, u]))
+
+    const mergedUsers = sp.users.map((su) => {
+      const tu = templateById.get(su.id)
+      if (!tu) {
+        return structuredClone(su)
+      }
       return {
         ...tu,
         color: su.color,
@@ -84,8 +83,16 @@ export function mergeGanttProjectsFromStorage(
           endSerial: b.endSerial,
         })),
       }
-    }),
-  }))
+    })
+
+    const synced = withSyncedNames(mergedUsers)
+
+    return {
+      ...tp,
+      users: synced,
+      rangeLabel: computeGanttRangeLabel(synced, tp.rangeLabel),
+    }
+  })
 }
 
 function loadPayload(): Payload | null {
@@ -102,12 +109,10 @@ function loadPayload(): Payload | null {
 }
 
 export function loadAllocationsGanttProjects(): MockGanttProject[] {
+  const template = buildAllocationsGanttTemplate()
   const payload = loadPayload()
-  if (!payload) return structuredClone(MOCK_TIMELINE_PROJECTS)
-  return mergeGanttProjectsFromStorage(
-    payload.projects,
-    MOCK_TIMELINE_PROJECTS,
-  )
+  if (!payload) return structuredClone(template)
+  return mergeStoredWithTemplate(payload.projects, template)
 }
 
 export function saveAllocationsGanttProjects(
