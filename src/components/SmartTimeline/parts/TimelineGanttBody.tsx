@@ -1,6 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import {
-  GanttDataRow,
   GanttDayBgCell,
   GanttLaneHeader,
   GanttLaneMonthNav,
@@ -18,14 +17,16 @@ import {
   GanttProjectLaneRow,
   GanttProjectLaneStack,
   GanttHeaderStickyLane,
+  GanttGridRowPair,
   GanttScrollArea,
   GanttScrollInner,
   GanttTimeDayCell,
   GanttTimeDowCell,
   GanttTodayIndicatorLine,
+  GanttTodayIndicatorTrack,
   GanttTrackArea,
   GanttVirtualRowTrack,
-  GanttVirtualTimeTrack,
+  GanttVirtualTimeTrackSticky,
 } from '../SmartTimeline.styles'
 import { TIMELINE_UI } from '../constants'
 import { useVirtualInfiniteTimelineScroll } from '../hooks/useVirtualInfiniteTimelineScroll'
@@ -148,162 +149,109 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
     getDateForColumn,
   } = useVirtualInfiniteTimelineScroll({ dayWidth })
 
-  const dayRowH = '1.625rem'
-  const dowRowH = '1.625rem'
+  /** Metade da lane do header para alinhar com a coluna “Projetos” (sem buraco escuro abaixo dos dias da semana). */
+  const headerHalfH = TIMELINE_UI.headerLaneMinHeight / 2
+  const dayRowH = `${headerHalfH}px`
+  const dowRowH = `${headerHalfH}px`
 
   const todaySerial = dateToSerial(new Date())
   const lastSerial = startSerial + columnCount - 1
   const todayInWindow =
     todaySerial >= startSerial && todaySerial <= lastSerial
   const todayIndicatorCenterX = todayInWindow
-    ? (todaySerial - startSerial) * dayWidth + dayWidth / 2
+    ? Math.round((todaySerial - startSerial) * dayWidth + dayWidth / 2)
     : 0
-  const todayLineLeft = TIMELINE_UI.laneWidth + todayIndicatorCenterX
 
   return (
     <GanttScrollArea ref={scrollRef} onScroll={onScroll}>
       <GanttScrollInner $minTrackWidth={totalWidth}>
-      <GanttDataRow $minTrackWidth={totalWidth} $stickyTop>
-        <GanttHeaderStickyLane>
-          <GanttLaneHeader>Projetos</GanttLaneHeader>
-          <GanttLaneMonthNav>
-            <GanttMonthBtn
-              type="button"
-              aria-label="Mês anterior"
-              onClick={() => shiftViewportByDays(-30)}
-            >
-              ‹
-            </GanttMonthBtn>
-            <GanttMonthLabel>{monthNavLabel}</GanttMonthLabel>
-            <GanttMonthBtn
-              type="button"
-              aria-label="Próximo mês"
-              onClick={() => shiftViewportByDays(30)}
-            >
-              ›
-            </GanttMonthBtn>
-          </GanttLaneMonthNav>
-        </GanttHeaderStickyLane>
-        <GanttVirtualTimeTrack $width={totalWidth}>
-          {visibleColIndices.map((col) => {
-            const d = getDateForColumn(col)
-            const wk = d.getDay() === 0 || d.getDay() === 6
-            const isToday = dateToSerial(d) === todaySerial
-            return (
-              <GanttTimeDayCell
-                key={`n-${startSerial + col}`}
-                $weekend={wk}
-                $isToday={isToday}
-                style={{
-                  position: 'absolute',
-                  left: col * dayWidth,
-                  top: 0,
-                  width: dayWidth,
-                  height: dayRowH,
-                }}
+        <GanttGridRowPair $minTrackWidth={totalWidth}>
+          <GanttHeaderStickyLane>
+            <GanttLaneHeader>Projetos</GanttLaneHeader>
+            <GanttLaneMonthNav>
+              <GanttMonthBtn
+                type="button"
+                aria-label="Mês anterior"
+                onClick={() => shiftViewportByDays(-30)}
               >
-                {d.getDate()}
-              </GanttTimeDayCell>
-            )
-          })}
-          {visibleColIndices.map((col) => {
-            const d = getDateForColumn(col)
-            const wk = d.getDay() === 0 || d.getDay() === 6
-            const isToday = dateToSerial(d) === todaySerial
-            return (
-              <GanttTimeDowCell
-                key={`w-${startSerial + col}`}
-                $weekend={wk}
-                $isToday={isToday}
-                style={{
-                  position: 'absolute',
-                  left: col * dayWidth,
-                  top: dayRowH,
-                  width: dayWidth,
-                  height: dowRowH,
-                }}
+                ‹
+              </GanttMonthBtn>
+              <GanttMonthLabel>{monthNavLabel}</GanttMonthLabel>
+              <GanttMonthBtn
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() => shiftViewportByDays(30)}
               >
-                {WEEKDAY_PT[d.getDay()]}
-              </GanttTimeDowCell>
-            )
-          })}
-        </GanttVirtualTimeTrack>
-      </GanttDataRow>
+                ›
+              </GanttMonthBtn>
+            </GanttLaneMonthNav>
+          </GanttHeaderStickyLane>
+          <GanttVirtualTimeTrackSticky $width={totalWidth}>
+            {visibleColIndices.map((col) => {
+              const d = getDateForColumn(col)
+              const wk = d.getDay() === 0 || d.getDay() === 6
+              const isToday = dateToSerial(d) === todaySerial
+              return (
+                <GanttTimeDayCell
+                  key={`n-${startSerial + col}`}
+                  $weekend={wk}
+                  $isToday={isToday}
+                  style={{
+                    position: 'absolute',
+                    left: col * dayWidth,
+                    top: 0,
+                    width: dayWidth,
+                    height: dayRowH,
+                  }}
+                >
+                  {d.getDate()}
+                </GanttTimeDayCell>
+              )
+            })}
+            {visibleColIndices.map((col) => {
+              const d = getDateForColumn(col)
+              const wk = d.getDay() === 0 || d.getDay() === 6
+              const isToday = dateToSerial(d) === todaySerial
+              return (
+                <GanttTimeDowCell
+                  key={`w-${startSerial + col}`}
+                  $weekend={wk}
+                  $isToday={isToday}
+                  style={{
+                    position: 'absolute',
+                    left: col * dayWidth,
+                    top: dayRowH,
+                    width: dayWidth,
+                    height: dowRowH,
+                  }}
+                >
+                  {WEEKDAY_PT[d.getDay()]}
+                </GanttTimeDowCell>
+              )
+            })}
+          </GanttVirtualTimeTrackSticky>
+        </GanttGridRowPair>
 
-      {projects.map((project) => (
-        <Fragment key={project.id}>
-          <GanttDataRow $minTrackWidth={totalWidth}>
-            <GanttProjectLaneRow>
-              <GanttProjectLaneStack>
-                <GanttLaneProjectTitle>{project.title}</GanttLaneProjectTitle>
-                <GanttLaneRange>{project.rangeLabel}</GanttLaneRange>
-              </GanttProjectLaneStack>
-            </GanttProjectLaneRow>
-            <GanttTrackArea $minWidth={totalWidth}>
-              <GanttVirtualRowTrack
-                $width={totalWidth}
-                $height={TIMELINE_UI.projectRowHeight}
-              >
-                {visibleColIndices.map((col) => {
-                  const d = getDateForColumn(col)
-                  const wk = d.getDay() === 0 || d.getDay() === 6
-                  return (
-                    <GanttDayBgCell
-                      key={`pg-${project.id}-${startSerial + col}`}
-                      $weekend={wk}
-                      style={{
-                        position: 'absolute',
-                        left: col * dayWidth,
-                        top: 0,
-                        width: dayWidth,
-                        height: '100%',
-                      }}
-                    />
-                  )
-                })}
-              </GanttVirtualRowTrack>
-            </GanttTrackArea>
-          </GanttDataRow>
-
-          {project.users.map((user) => (
-            <GanttDataRow key={user.id} $minTrackWidth={totalWidth}>
-              <GanttLaneUserRow>
-                <GanttLaneUserCell>
-                  <GanttLaneUserAvatar $color={user.color} aria-hidden>
-                    {user.name
-                      .split(/\s+/)
-                      .map((p) => p[0])
-                      .slice(0, 2)
-                      .join('')}
-                  </GanttLaneUserAvatar>
-                  <GanttLaneUserTextRow>
-                    <GanttLaneUserName>{user.name}</GanttLaneUserName>
-                    <GanttLaneUserColorPickerWrap>
-                      <GanttLaneUserColorSwatch $color={user.color} aria-hidden />
-                      <input
-                        type="color"
-                        value={toInputColorValue(user.color)}
-                        onChange={(e) =>
-                          onUserColorChange(project.id, user.id, e.target.value)
-                        }
-                        aria-label="Escolher cor da alocação"
-                        title="Cor da alocação na timeline"
-                      />
-                    </GanttLaneUserColorPickerWrap>
-                  </GanttLaneUserTextRow>
-                </GanttLaneUserCell>
-              </GanttLaneUserRow>
+        {projects.map((project) => (
+          <Fragment key={project.id}>
+            <GanttGridRowPair $minTrackWidth={totalWidth}>
+              <GanttProjectLaneRow>
+                <GanttProjectLaneStack>
+                  <GanttLaneProjectTitle>{project.title}</GanttLaneProjectTitle>
+                  <GanttLaneRange>{project.rangeLabel}</GanttLaneRange>
+                </GanttProjectLaneStack>
+              </GanttProjectLaneRow>
               <GanttTrackArea $minWidth={totalWidth}>
                 <GanttVirtualRowTrack
                   $width={totalWidth}
-                  $height={TIMELINE_UI.userRowHeight}
+                  $height={TIMELINE_UI.projectRowHeight}
                 >
                   {visibleColIndices.map((col) => {
                     const d = getDateForColumn(col)
                     const wk = d.getDay() === 0 || d.getDay() === 6
                     return (
                       <GanttDayBgCell
-                        key={`ug-${user.id}-${startSerial + col}`}
+                        key={`pg-${project.id}-${startSerial + col}`}
                         $weekend={wk}
                         style={{
                           position: 'absolute',
@@ -315,33 +263,89 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
                       />
                     )
                   })}
-                  {user.bars.map((b, i) =>
-                    barIntersectsWindow(b, visibleStartSerial, visibleEndSerial) ? (
-                      <GanttBarSegment
-                        key={`${user.id}-bar-${i}`}
-                        bar={b}
-                        timelineStartSerial={startSerial}
-                        dayWidth={dayWidth}
-                        color={user.color}
-                        projectId={project.id}
-                        userId={user.id}
-                        barIndex={i}
-                        onBarChange={onBarChange}
-                      />
-                    ) : null,
-                  )}
                 </GanttVirtualRowTrack>
               </GanttTrackArea>
-            </GanttDataRow>
-          ))}
+            </GanttGridRowPair>
+
+            {project.users.map((user) => (
+              <GanttGridRowPair key={user.id} $minTrackWidth={totalWidth}>
+                <GanttLaneUserRow>
+                  <GanttLaneUserCell>
+                    <GanttLaneUserAvatar $color={user.color} aria-hidden>
+                      {user.name
+                        .split(/\s+/)
+                        .map((p) => p[0])
+                        .slice(0, 2)
+                        .join('')}
+                    </GanttLaneUserAvatar>
+                    <GanttLaneUserTextRow>
+                      <GanttLaneUserName>{user.name}</GanttLaneUserName>
+                      <GanttLaneUserColorPickerWrap>
+                        <GanttLaneUserColorSwatch $color={user.color} aria-hidden />
+                        <input
+                          type="color"
+                          value={toInputColorValue(user.color)}
+                          onChange={(e) =>
+                            onUserColorChange(project.id, user.id, e.target.value)
+                          }
+                          aria-label="Escolher cor da alocação"
+                          title="Cor da alocação na timeline"
+                        />
+                      </GanttLaneUserColorPickerWrap>
+                    </GanttLaneUserTextRow>
+                  </GanttLaneUserCell>
+                </GanttLaneUserRow>
+                <GanttTrackArea $minWidth={totalWidth}>
+                  <GanttVirtualRowTrack
+                    $width={totalWidth}
+                    $height={TIMELINE_UI.userRowHeight}
+                  >
+                    {visibleColIndices.map((col) => {
+                      const d = getDateForColumn(col)
+                      const wk = d.getDay() === 0 || d.getDay() === 6
+                      return (
+                        <GanttDayBgCell
+                          key={`ug-${user.id}-${startSerial + col}`}
+                          $weekend={wk}
+                          style={{
+                            position: 'absolute',
+                            left: col * dayWidth,
+                            top: 0,
+                            width: dayWidth,
+                            height: '100%',
+                          }}
+                        />
+                      )
+                    })}
+                    {user.bars.map((b, i) =>
+                      barIntersectsWindow(b, visibleStartSerial, visibleEndSerial) ? (
+                        <GanttBarSegment
+                          key={`${user.id}-bar-${i}`}
+                          bar={b}
+                          timelineStartSerial={startSerial}
+                          dayWidth={dayWidth}
+                          color={user.color}
+                          projectId={project.id}
+                          userId={user.id}
+                          barIndex={i}
+                          onBarChange={onBarChange}
+                        />
+                      ) : null,
+                    )}
+                  </GanttVirtualRowTrack>
+                </GanttTrackArea>
+              </GanttGridRowPair>
+            ))}
         </Fragment>
       ))}
       {todayInWindow ? (
-        <GanttTodayIndicatorLine
-          $left={todayLineLeft}
-          title="Hoje"
-          aria-hidden
-        />
+        <GanttTodayIndicatorTrack $trackWidth={totalWidth}>
+          <GanttTodayIndicatorLine
+            $centerX={todayIndicatorCenterX}
+            title="Hoje"
+            aria-hidden
+          />
+        </GanttTodayIndicatorTrack>
       ) : null}
       </GanttScrollInner>
     </GanttScrollArea>

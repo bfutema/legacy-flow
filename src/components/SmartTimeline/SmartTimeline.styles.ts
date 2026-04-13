@@ -16,9 +16,10 @@ const laneSticky = css`
   flex-shrink: 0;
   position: sticky;
   left: 0;
-  z-index: 2;
+  z-index: 12;
   background: ${({ theme }) => theme.surface};
   border-right: 1px solid ${({ theme }) => theme.border};
+  border-bottom: 1px solid ${({ theme }) => theme.border};
   box-sizing: border-box;
   box-shadow: 6px 0 20px rgba(15, 23, 42, 0.07);
 
@@ -49,7 +50,10 @@ export const GanttScrollArea = styled.div`
   -webkit-overflow-scrolling: touch;
 `
 
-/** Conteúdo rolável da timeline: ancora uma única linha de “hoje” em relação a todas as linhas. */
+/**
+ * Coluna de linhas: cada linha é um grid próprio (lane | track).
+ * Evita `display: contents`, que em WebKit/Chromium quebra `position: sticky` na coluna fixa.
+ */
 export const GanttScrollInner = styled.div<{ $minTrackWidth: number }>`
   position: relative;
   display: flex;
@@ -61,27 +65,21 @@ export const GanttScrollInner = styled.div<{ $minTrackWidth: number }>`
   );
 `
 
-export const GanttDataRow = styled.div<{
-  $minTrackWidth: number
-  $stickyTop?: boolean
-}>`
-  display: flex;
+const ganttRowGrid = ($minTrackWidth: number) => css`
+  display: grid;
+  grid-template-columns:
+    ${TIMELINE_UI.laneWidth}px
+    minmax(${$minTrackWidth}px, 1fr);
   align-items: stretch;
   min-width: max(
     100%,
-    ${({ $minTrackWidth }) => TIMELINE_UI.laneWidth + $minTrackWidth}px
+    ${TIMELINE_UI.laneWidth + $minTrackWidth}px
   );
-  border-bottom: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.surface};
+`
 
-  ${({ $stickyTop }) =>
-    $stickyTop
-      ? css`
-          position: sticky;
-          top: 0;
-          z-index: 4;
-        `
-      : undefined}
+/** Uma linha lógica: coluna fixa + faixa da timeline (mesmas colunas em todas as linhas). */
+export const GanttGridRowPair = styled.div<{ $minTrackWidth: number }>`
+  ${({ $minTrackWidth }) => ganttRowGrid($minTrackWidth)}
 `
 
 export const GanttStickyLane = styled.div`
@@ -96,7 +94,9 @@ export const GanttStickyLane = styled.div`
 
 /** Coluna esquerda da régua: acima das faixas de dados ao rolar na vertical. */
 export const GanttHeaderStickyLane = styled(GanttStickyLane)`
-  z-index: 5;
+  z-index: 18;
+  top: 0;
+  border-bottom: 2px solid ${({ theme }) => theme.chartGrid};
 `
 
 export const GanttLaneHeader = styled.div`
@@ -289,30 +289,60 @@ export const GanttVirtualTimeTrack = styled.div<{ $width: number }>`
   position: relative;
   width: ${({ $width }) => $width}px;
   flex-shrink: 0;
-  min-height: 3.35rem;
+  /* Igual à altura mínima da lane “Projetos” na mesma linha — evita faixa vazia sob qui/sex/sáb. */
+  min-height: ${TIMELINE_UI.headerLaneMinHeight}px;
   background: ${({ theme }) => theme.surface};
-  border-bottom: 1px solid ${({ theme }) => theme.border};
+  /* Células absolute cobrem o fundo; border no pai some. Faixa com z-index separa header do grid. */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: ${({ theme }) => theme.chartGrid};
+    z-index: 4;
+    pointer-events: none;
+  }
+`
+
+/** Régua de datas da primeira linha: sticky vertical alinhado à coluna “Projetos”. */
+export const GanttVirtualTimeTrackSticky = styled(GanttVirtualTimeTrack)`
+  position: sticky;
+  top: 0;
+  z-index: 16;
 `
 
 /**
- * Linha vertical do dia atual — um único elemento no `GanttScrollInner` (contínua na vertical).
- * `left` = borda esquerda da área de trilhas + centro da coluna do dia (px).
+ * Faixa só sobre a timeline (à direita da coluna fixa), abaixo do header — não compete com o menu.
  */
-export const GanttTodayIndicatorLine = styled.div<{ $left: number }>`
+export const GanttTodayIndicatorTrack = styled.div<{ $trackWidth: number }>`
+  position: absolute;
+  left: ${TIMELINE_UI.laneWidth}px;
+  top: ${TIMELINE_UI.headerLaneMinHeight}px;
+  width: ${({ $trackWidth }) => $trackWidth}px;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  margin: 0;
+  min-height: 0;
+  overflow: hidden;
+  overflow: clip;
+`
+
+/**
+ * Linha do dia atual — `centerX` em px dentro do track; largura 2px sem transform
+ * (evita subpixel) e sem box-shadow (não é recortável de forma confiável).
+ */
+export const GanttTodayIndicatorLine = styled.div<{ $centerX: number }>`
   position: absolute;
   top: 0;
   bottom: 0;
-  left: ${({ $left }) => $left}px;
+  left: ${({ $centerX }) => $centerX - 1}px;
   width: 2px;
-  transform: translateX(-50%);
   pointer-events: none;
-  border-radius: 1px;
-  z-index: 50;
   background: ${({ theme }) => theme.primary};
-  opacity: 0.92;
-  box-shadow:
-    0 0 0 1px ${({ theme }) => theme.surface},
-    0 0 10px ${({ theme }) => theme.primaryMuted};
+  opacity: 0.95;
 `
 
 const dayCellHoverOverlay = css`
@@ -387,10 +417,13 @@ export const GanttTimeDowCell = styled.div<{ $weekend: boolean; $isToday?: boole
 `
 
 export const GanttTrackArea = styled.div<{ $minWidth: number }>`
-  flex: 1 1 auto;
   min-width: ${({ $minWidth }) => $minWidth}px;
+  width: 100%;
+  box-sizing: border-box;
   background: ${({ theme }) => theme.surface};
   position: relative;
+  z-index: 0;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
 `
 
 /** Faixa de fundo da linha (projeto ou usuário) com largura total virtualizada. */
