@@ -11,6 +11,7 @@ import { NewProject } from './pages/NewProject'
 import { ProjectDetail } from './pages/ProjectDetail'
 import { Projects } from './pages/Projects'
 import { Allocations } from './pages/Allocations'
+import { OrganogramPage } from './pages/OrganogramPage'
 import { Reports } from './pages/Reports'
 import { TaskBoard } from './pages/TaskBoard'
 import { EditUser } from './pages/EditUser'
@@ -59,6 +60,7 @@ export default function App() {
                 element={<DatabaseModeling />}
               />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/organogram" element={<OrganogramPage />} />
               <Route path="/allocations" element={<Allocations />} />
               <Route path="/tasks" element={<TaskBoard />} />
               <Route path="/users" element={<Users />} />
@@ -92,6 +94,10 @@ export default function App() {
               <Route
                 path="/tarefas"
                 element={<Navigate to="/tasks" replace />}
+              />
+              <Route
+                path="/organograma"
+                element={<Navigate to="/organogram" replace />}
               />
             </Route>
           </Route>

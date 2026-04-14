@@ -15,7 +15,9 @@ export function AdminLayout() {
   const { pathname } = useLocation()
   const normalizedPath = pathname.replace(/\/$/, '') || '/'
   const contentFlush =
-    normalizedPath === '/allocations' || normalizedPath === '/tasks'
+    normalizedPath === '/allocations' ||
+    normalizedPath === '/tasks' ||
+    normalizedPath === '/organogram'
   const [collapsed, setCollapsed] = useState(readCollapsed)
 
   const toggleSidebar = useCallback(() => {

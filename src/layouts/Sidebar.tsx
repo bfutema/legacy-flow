@@ -47,6 +47,18 @@ const iconKanban = (
   </svg>
 )
 
+/* Organograma pausado — descomente o ícone e o <SidebarLink> abaixo para reativar o menu.
+const iconOrganogram = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="5" r="2.5" />
+    <path d="M12 7.5v4M7 11.5h10" />
+    <circle cx="7" cy="18" r="2.5" />
+    <circle cx="17" cy="18" r="2.5" />
+    <path d="M7 14v1.5M17 14v1.5" />
+  </svg>
+)
+*/
+
 type Props = {
   collapsed: boolean
 }
@@ -82,6 +94,12 @@ export function Sidebar({ collapsed }: Props) {
           <NavIcon>{iconRel}</NavIcon>
           <NavLabel $collapsed={collapsed}>Relatórios</NavLabel>
         </SidebarLink>
+        {/* Organograma: rota /organogram ainda existe; descomente ícone + link no topo do arquivo.
+        <SidebarLink $collapsed={collapsed} to="/organogram">
+          <NavIcon>{iconOrganogram}</NavIcon>
+          <NavLabel $collapsed={collapsed}>Organograma</NavLabel>
+        </SidebarLink>
+        */}
       </NavScroll>
       <Footer>
         <FooterText $collapsed={collapsed}>v0.1 · template</FooterText>
