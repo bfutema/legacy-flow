@@ -21,6 +21,7 @@ import {
   type Connection,
   type Edge,
   type Node,
+  type ReactFlowInstance,
 } from '@xyflow/react'
 import {
   CARDINALITY_OPTIONS,
@@ -29,6 +30,7 @@ import {
   type RelationshipEdgeData,
 } from '../edges/relationshipTypes'
 import { RelationshipStepEdge } from '../edges/RelationshipStepEdge'
+import { DatabaseImportModal } from '../components/DatabaseImportModal/DatabaseImportModal'
 import { Navigate, useParams } from 'react-router-dom'
 import { useTheme } from 'styled-components'
 import { useConfirmDialog } from '../contexts/ConfirmDialogContext'
@@ -61,6 +63,8 @@ import {
   PageTitle,
   PanelActions,
 } from './DatabaseModeling.styles'
+import mysqlDbMapSql from '../sql/mysql-generate-db-map-in-object.sql?raw'
+import psqlDbMapSql from '../sql/psql-generate-db-map-in-object.sql?raw'
 
 const nodeTypes = { table: TableNode }
 
@@ -78,7 +82,9 @@ function DatabaseFlowCanvas({
   const { confirm } = useConfirmDialog()
   const theme = useTheme()
   const hostRef = useRef<HTMLDivElement>(null)
+  const flowInstanceRef = useRef<ReactFlowInstance | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
 
   const initialFlow = useMemo(() => {
     const saved = loadModelingFlow(projectId)
@@ -239,6 +245,28 @@ function DatabaseFlowCanvas({
     [confirm],
   )
 
+  const confirmReplaceDiagram = useCallback(
+    (message: string) =>
+      confirm({
+        title: 'Importar do banco',
+        message,
+        confirmLabel: 'Substituir diagrama',
+        cancelLabel: 'Cancelar',
+      }),
+    [confirm],
+  )
+
+  const handleApplyDatabaseImport = useCallback(
+    (nextNodes: Node[], nextEdges: Edge[]) => {
+      setNodes(nextNodes)
+      setEdges(nextEdges)
+      window.requestAnimationFrame(() => {
+        flowInstanceRef.current?.fitView({ padding: 0.2 })
+      })
+    },
+    [setEdges, setNodes],
+  )
+
   const addTable = useCallback(() => {
     setNodes((nds) => {
       const tableCount = nds.filter((n) => n.type === 'table').length
@@ -280,6 +308,9 @@ function DatabaseFlowCanvas({
     <FlowHost ref={hostRef}>
       <ReactFlow
         colorMode={colorMode}
+        onInit={(inst) => {
+          flowInstanceRef.current = inst
+        }}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
@@ -367,6 +398,26 @@ function DatabaseFlowCanvas({
           <PanelActions>
             <FsButton
               type="button"
+              onClick={() => setImportModalOpen(true)}
+              title="Importar esquema: script MySQL/MariaDB + JSON gerado na consulta"
+              aria-label="Importar esquema a partir de script MySQL ou MariaDB e JSON"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden
+              >
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+              </svg>
+              <span className="fs-btn-label">Importar do banco</span>
+            </FsButton>
+            <FsButton
+              type="button"
               onClick={addTable}
               title="Adicionar nova tabela ao canvas"
               aria-label="Adicionar nova tabela ao canvas"
@@ -432,8 +483,17 @@ function DatabaseFlowCanvas({
               )}
             </FsButton>
           </PanelActions>
-        </Panel>
+               </Panel>
       </ReactFlow>
+      <DatabaseImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        sqlScripts={{ mysql: mysqlDbMapSql, postgresql: psqlDbMapSql }}
+        primaryColor={projectPrimaryColor}
+        edgeStroke={theme.textMuted}
+        onConfirmReplace={confirmReplaceDiagram}
+        onApply={handleApplyDatabaseImport}
+      />
     </FlowHost>
   )
 }
