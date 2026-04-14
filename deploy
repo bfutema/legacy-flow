@@ -4,7 +4,7 @@
 # Uso: ./deploy
 #
 # Variáveis opcionais:
-#   VITE_BASE_PATH="/<repo>/"   # base do Vite (Project Pages)
+#   VITE_BASE_PATH="/<repo>/"   # base do Vite (Project Pages); user.github.io → "/"
 #   GHP_BRANCH="gh-pages"
 #   GHP_REMOTE="origin"
 #   DEPLOY_PUSH_SOURCE=1        # após o commit de segurança, faz push da branch atual
@@ -36,13 +36,25 @@ ORIGIN_URL="$(git remote get-url "$GHP_REMOTE" 2>/dev/null || true)"
 REPO_NAME=""
 OWNER_NAME=""
 
+# Extrai owner/repo para HTTPS e SSH (git@github.com:owner/repo.git)
+parse_github_owner_repo() {
+  local url="$1"
+  url="${url%.git}"
+  if [[ "$url" =~ ^git@github\.com:([^/]+)/(.+)$ ]]; then
+    OWNER_NAME="${BASH_REMATCH[1]}"
+    REPO_NAME="${BASH_REMATCH[2]}"
+    return 0
+  fi
+  if [[ "$url" =~ https?://github\.com/([^/]+)/(.+)$ ]]; then
+    OWNER_NAME="${BASH_REMATCH[1]}"
+    REPO_NAME="${BASH_REMATCH[2]}"
+    return 0
+  fi
+  return 1
+}
+
 if [[ -n "$ORIGIN_URL" ]]; then
-  tmp="$ORIGIN_URL"
-  tmp="${tmp%.git}"
-  REPO_NAME="${tmp##*/}"
-  tmp2="$tmp"
-  tmp2="${tmp2%/*}"
-  OWNER_NAME="${tmp2##*/}"
+  parse_github_owner_repo "$ORIGIN_URL" || true
 fi
 
 if [[ -z "${VITE_BASE_PATH:-}" ]]; then
@@ -87,11 +99,23 @@ fi
 echo "📦 Fazendo build..."
 
 if [[ ! -d "node_modules" ]]; then
-  yarn install
+  if command -v npm >/dev/null 2>&1 && [[ -f package-lock.json ]]; then
+    npm ci
+  elif command -v yarn >/dev/null 2>&1; then
+    yarn install --frozen-lockfile 2>/dev/null || yarn install
+  else
+    npm install
+  fi
 fi
 
 export VITE_BASE_PATH
-yarn build
+if command -v npm >/dev/null 2>&1 && [[ -f package-lock.json ]]; then
+  npm run build
+elif command -v yarn >/dev/null 2>&1; then
+  yarn build
+else
+  npm run build
+fi
 
 if [[ ! -d "dist" ]]; then
   echo "❌ Erro: a pasta 'dist' não foi encontrada."
@@ -100,6 +124,11 @@ fi
 
 TEMP_DIR="$(mktemp -d)"
 cp -r dist/. "$TEMP_DIR/"
+# GitHub Pages: rotas do SPA em URL direta devolvem 404; 404.html carrega o mesmo app que index.html
+if [[ -f "$TEMP_DIR/index.html" ]]; then
+  cp "$TEMP_DIR/index.html" "$TEMP_DIR/404.html"
+fi
+
 
 echo "🌿 Preparando branch ${GHP_BRANCH}..."
 if git show-ref --verify --quiet "refs/heads/${GHP_BRANCH}"; then
