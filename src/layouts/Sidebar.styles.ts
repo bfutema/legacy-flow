@@ -23,6 +23,7 @@ export const Brand = styled.div<{ $collapsed: boolean }>`
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  gap: ${({ $collapsed }) => ($collapsed ? 0 : '0.5rem')};
   justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
   height: ${ADMIN_HEADER_BAR_HEIGHT};
   min-height: ${ADMIN_HEADER_BAR_HEIGHT};

@@ -1,3 +1,5 @@
+import { FlowMark } from '../components/Brand'
+import { BrandLabel, MarkWrap } from '../components/Brand/FlowLogo.styles'
 import {
   Aside,
   Brand,
@@ -66,8 +68,11 @@ type Props = {
 export function Sidebar({ collapsed }: Props) {
   return (
     <Aside $collapsed={collapsed} aria-label="Menu principal">
-      <Brand $collapsed={collapsed}>
-        {collapsed ? 'F' : 'Flow Admin'}
+      <Brand $collapsed={collapsed} aria-label={collapsed ? 'Flow Admin' : undefined}>
+        <MarkWrap>
+          <FlowMark size={collapsed ? 24 : 28} />
+        </MarkWrap>
+        {!collapsed ? <BrandLabel>Flow Admin</BrandLabel> : null}
       </Brand>
       <NavScroll $collapsed={collapsed}>
         <SidebarLink $collapsed={collapsed} to="/" end>
