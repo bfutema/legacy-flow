@@ -18,6 +18,11 @@ export function getUserById(id: string): DemoUser | undefined {
   return getDirectoryUsers().find((u) => u.id === id)
 }
 
+export function getUserByEmail(email: string): DemoUser | undefined {
+  const em = email.trim().toLowerCase()
+  return getDirectoryUsers().find((u) => u.email.toLowerCase() === em)
+}
+
 export function updateDirectoryUser(
   id: string,
   patch: UserProfilePatch,

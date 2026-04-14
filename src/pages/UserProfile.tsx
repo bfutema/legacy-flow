@@ -14,6 +14,7 @@ import {
   PRIMARY_DATABASE_LABELS,
   type PrimaryDatabaseType,
 } from '../data/databaseEngines'
+import { Can } from '../contexts/AbilityContext'
 import { getUserById } from '../data/directoryUsers'
 import { resolveProjectById } from '../data/projects'
 import { getProjectIdsForUser } from '../data/userProjectAssociations'
@@ -111,7 +112,9 @@ export function UserProfile() {
           </ProfileMeta>
         </HeaderText>
         <HeaderActions>
-          <EditLink to={`/users/${user.id}/edit`}>Editar dados</EditLink>
+          <Can I="update" a="User">
+            <EditLink to={`/users/${user.id}/edit`}>Editar dados</EditLink>
+          </Can>
         </HeaderActions>
       </ProfileHeader>
 

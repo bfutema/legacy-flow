@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { AbilityProvider } from './contexts/AbilityContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { AppThemeProvider } from './contexts/ThemeContext'
 import { AdminLayout } from './layouts/AdminLayout'
@@ -19,7 +20,9 @@ import { NewUser } from './pages/NewUser'
 import { UserProfile } from './pages/UserProfile'
 import { Users } from './pages/Users'
 import { ResetPassword } from './pages/ResetPassword'
+import { AccessControl } from './pages/AccessControl'
 import { ProtectedRoute } from './routes/ProtectedRoute'
+import { RequireAbility } from './routes/RequireAbility'
 
 function RedirectLegacyProjectDetail() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -35,7 +38,8 @@ export default function App() {
   return (
     <AppThemeProvider>
       <AuthProvider>
-        <Routes>
+        <AbilityProvider>
+          <Routes>
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -51,22 +55,118 @@ export default function App() {
           </Route>
           <Route element={<ProtectedRoute />}>
             <Route element={<AdminLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/projects/new" element={<NewProject />} />
-              <Route path="/projects/:projectId" element={<ProjectDetail />} />
+              <Route
+                path="/"
+                element={
+                  <RequireAbility I="read" a="Dashboard">
+                    <Dashboard />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects"
+                element={
+                  <RequireAbility I="read" a="Project">
+                    <Projects />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/new"
+                element={
+                  <RequireAbility I="create" a="Project">
+                    <NewProject />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/:projectId"
+                element={
+                  <RequireAbility I="read" a="Project">
+                    <ProjectDetail />
+                  </RequireAbility>
+                }
+              />
               <Route
                 path="/projects/:projectId/modeling"
-                element={<DatabaseModeling />}
+                element={
+                  <RequireAbility I="update" a="Project">
+                    <DatabaseModeling />
+                  </RequireAbility>
+                }
               />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/organogram" element={<OrganogramPage />} />
-              <Route path="/allocations" element={<Allocations />} />
-              <Route path="/tasks" element={<TaskBoard />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/users/new" element={<NewUser />} />
-              <Route path="/users/:userId/edit" element={<EditUser />} />
-              <Route path="/users/:userId" element={<UserProfile />} />
+              <Route
+                path="/reports"
+                element={
+                  <RequireAbility I="read" a="Report">
+                    <Reports />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/organogram"
+                element={
+                  <RequireAbility I="read" a="Organogram">
+                    <OrganogramPage />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/allocations"
+                element={
+                  <RequireAbility I="read" a="Timeline">
+                    <Allocations />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <RequireAbility I="read" a="TaskBoard">
+                    <TaskBoard />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/users"
+                element={
+                  <RequireAbility I="read" a="User">
+                    <Users />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/users/new"
+                element={
+                  <RequireAbility I="create" a="User">
+                    <NewUser />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/users/:userId/edit"
+                element={
+                  <RequireAbility I="update" a="User">
+                    <EditUser />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/users/:userId"
+                element={
+                  <RequireAbility I="read" a="User">
+                    <UserProfile />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/access-control"
+                element={
+                  <RequireAbility I="manage" a="Security">
+                    <AccessControl />
+                  </RequireAbility>
+                }
+              />
               <Route
                 path="/projetos"
                 element={<Navigate to="/projects" replace />}
@@ -99,10 +199,15 @@ export default function App() {
                 path="/organograma"
                 element={<Navigate to="/organogram" replace />}
               />
+              <Route
+                path="/controle-acesso"
+                element={<Navigate to="/access-control" replace />}
+              />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </AbilityProvider>
       </AuthProvider>
     </AppThemeProvider>
   )

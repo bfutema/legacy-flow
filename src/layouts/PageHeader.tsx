@@ -1,4 +1,6 @@
+import { useAbility } from '@casl/react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { AbilityContext } from '../contexts/AbilityContext'
 import { useProjectPrimaryColor } from '../hooks/useProjectPrimaryColor'
 import { saveProjectMetadata } from '../persistence/projectMetadataStorage'
 import { formatDisplayDate } from '../utils/formatDisplayDate'
@@ -32,6 +34,8 @@ export function PageHeader({
   updatedAt,
   titleTrailing,
 }: PageHeaderProps) {
+  const ability = useAbility(AbilityContext)
+  const canUpdate = ability.can('update', 'Project')
   const { primaryColor, setPrimaryColor } = useProjectPrimaryColor(projectId)
   const [localTitle, setLocalTitle] = useState(title)
   const [localDesc, setLocalDesc] = useState(description)
@@ -43,6 +47,7 @@ export function PageHeader({
   }, [title, description, updatedAt])
 
   const commit = useCallback(() => {
+    if (!canUpdate) return
     const n = localTitle.trim()
     if (!n) {
       setLocalTitle(title)
@@ -64,6 +69,7 @@ export function PageHeader({
     localDesc,
     title,
     description,
+    canUpdate,
   ])
 
   return (
@@ -76,7 +82,11 @@ export function PageHeader({
             <ColorBoxInput
               type="color"
               value={primaryColor}
-              onChange={(e) => setPrimaryColor(e.target.value)}
+              disabled={!canUpdate}
+              onChange={(e) => {
+                if (!canUpdate) return
+                setPrimaryColor(e.target.value)
+              }}
               aria-label="Cor primária do projeto"
             />
           </ColorBoxLabel>
@@ -84,6 +94,7 @@ export function PageHeader({
             value={localTitle}
             onChange={(e) => setLocalTitle(e.target.value)}
             onBlur={commit}
+            readOnly={!canUpdate}
             aria-label="Nome do projeto"
             placeholder="Nome do projeto"
             autoComplete="off"
@@ -97,6 +108,7 @@ export function PageHeader({
         value={localDesc}
         onChange={(e) => setLocalDesc(e.target.value)}
         onBlur={commit}
+        readOnly={!canUpdate}
         aria-label="Descrição do projeto"
         placeholder="Breve descrição do escopo do projeto…"
         rows={2}
@@ -105,10 +117,12 @@ export function PageHeader({
         {savedFlash ? <SavedFlash>Salvo neste navegador</SavedFlash> : null}
         <span>Última atualização: {formatDisplayDate(updatedAt)}</span>
       </HeaderMetaRow>
-      <EditHint>
-        Clique no nome ou na descrição para editar. A cor à esquerda vale para os
-        cabeçalhos das tabelas na modelagem.
-      </EditHint>
+      {canUpdate ? (
+        <EditHint>
+          Clique no nome ou na descrição para editar. A cor à esquerda vale para os
+          cabeçalhos das tabelas na modelagem.
+        </EditHint>
+      ) : null}
     </HeaderRoot>
   )
 }

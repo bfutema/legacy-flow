@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { Can } from '../contexts/AbilityContext'
 import { PRIMARY_DATABASE_LABELS, PRIMARY_DATABASES } from '../data/databaseEngines'
 import { getAllProjects } from '../data/projects'
 import { initialDbEdges, initialDbNodes } from '../nodes/initialFlow'
@@ -167,18 +168,20 @@ export function Dashboard() {
             a lista para editar ou entrar direto na modelagem ER.
           </span>
         </QuickLinksText>
-        <QuickLinksButton to="/projects">
-          Ver todos os projetos
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path
-              d="M5 12h14M13 6l6 6-6 6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </QuickLinksButton>
+        <Can I="read" a="Project">
+          <QuickLinksButton to="/projects">
+            Ver todos os projetos
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M5 12h14M13 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </QuickLinksButton>
+        </Can>
       </QuickLinks>
     </DashboardRoot>
   )

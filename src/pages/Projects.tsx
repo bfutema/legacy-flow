@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Can } from '../contexts/AbilityContext'
 import { getAllProjects, resolveProjectById } from '../data/projects'
 import { formatDisplayDate } from '../utils/formatDisplayDate'
 import { getEffectiveProjectPrimaryColor } from '../hooks/useProjectPrimaryColor'
@@ -36,7 +37,9 @@ export function Projects() {
       <ProjectsTop>
         <PageTitle>Projetos</PageTitle>
         <ProjectsActions>
-          <NewProjectCta to="/projects/new">Novo projeto</NewProjectCta>
+          <Can I="create" a="Project">
+            <NewProjectCta to="/projects/new">Novo projeto</NewProjectCta>
+          </Can>
         </ProjectsActions>
       </ProjectsTop>
       <Lead>

@@ -15,6 +15,7 @@ const ROUTE_TREE: Record<string, CrumbItem[]> = {
   '/allocations': [{ label: 'Timeline' }],
   '/tasks': [{ label: 'Tarefas' }],
   '/organogram': [{ label: 'Organograma' }],
+  '/access-control': [{ label: 'Controle de acesso' }],
 }
 
 function usersNewCrumbs(): CrumbItem[] {

@@ -10,6 +10,8 @@ type Props = {
   projectId: string
   userId: string
   barIndex: number
+  /** Quando false, a barra é só leitura (sem arrastar extremidades). */
+  canEdit?: boolean
   onBarChange: (
     projectId: string,
     userId: string,
@@ -26,6 +28,7 @@ export function GanttBarSegment({
   projectId,
   userId,
   barIndex,
+  canEdit = true,
   onBarChange,
 }: Props) {
   const [dragging, setDragging] = useState(false)
@@ -35,6 +38,7 @@ export function GanttBarSegment({
 
   const onHandlePointerDown = useCallback(
     (edge: 'start' | 'end') => (e: React.PointerEvent) => {
+      if (!canEdit) return
       e.preventDefault()
       e.stopPropagation()
       const el = e.currentTarget
@@ -90,22 +94,27 @@ export function GanttBarSegment({
       projectId,
       userId,
       barIndex,
+      canEdit,
     ],
   )
 
   return (
     <GanttBarRoot $left={left} $width={width} $dragging={dragging}>
       <GanttBarFill $color={color} $dragging={dragging} />
-      <GanttBarHandle
-        data-edge="start"
-        aria-label="Ajustar data de início"
-        onPointerDown={onHandlePointerDown('start')}
-      />
-      <GanttBarHandle
-        data-edge="end"
-        aria-label="Ajustar data de fim"
-        onPointerDown={onHandlePointerDown('end')}
-      />
+      {canEdit ? (
+        <>
+          <GanttBarHandle
+            data-edge="start"
+            aria-label="Ajustar data de início"
+            onPointerDown={onHandlePointerDown('start')}
+          />
+          <GanttBarHandle
+            data-edge="end"
+            aria-label="Ajustar data de fim"
+            onPointerDown={onHandlePointerDown('end')}
+          />
+        </>
+      ) : null}
     </GanttBarRoot>
   )
 }

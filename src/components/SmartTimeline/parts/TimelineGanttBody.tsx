@@ -1,3 +1,4 @@
+import { useAbility } from '@casl/react'
 import {
   Fragment,
   useCallback,
@@ -9,6 +10,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { HiUserPlus, HiXMark } from 'react-icons/hi2'
+import { AbilityContext } from '../../../contexts/AbilityContext'
 import {
   GanttAllocEmpty,
   GanttAllocList,
@@ -229,10 +231,23 @@ function CollaboratorAllocPopover({
 }
 
 export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
+  const ability = useAbility(AbilityContext)
+  const canAllocate = ability.can('create', 'Timeline')
+  const canDeallocate = ability.can('delete', 'Timeline')
+  const canUpdateTimeline = ability.can('update', 'Timeline')
   const dayWidth = dayWidthProp ?? dayWidthForScale(scale)
   const [projects, setProjects] = useState<MockGanttProject[]>(
     loadAllocationsGanttProjects,
   )
+
+  const [allocPicker, setAllocPicker] = useState<{
+    projectId: string
+    anchor: DOMRect
+  } | null>(null)
+
+  useEffect(() => {
+    if (!canAllocate) setAllocPicker(null)
+  }, [canAllocate])
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
@@ -259,6 +274,7 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
       barIndex: number,
       next: MockGanttBar,
     ) => {
+      if (!canUpdateTimeline) return
       setProjects((ps) => {
         const nextProjects = ps.map((p) => {
           if (p.id !== projectId) return p
@@ -278,11 +294,12 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
         return nextProjects
       })
     },
-    [],
+    [canUpdateTimeline],
   )
 
   const onUserColorChange = useCallback(
     (projectId: string, userId: string, color: string) => {
+      if (!canUpdateTimeline) return
       setProjects((ps) => {
         const nextProjects = ps.map((p) => {
           if (p.id !== projectId) return p
@@ -297,15 +314,11 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
         return nextProjects
       })
     },
-    [],
+    [canUpdateTimeline],
   )
 
-  const [allocPicker, setAllocPicker] = useState<{
-    projectId: string
-    anchor: DOMRect
-  } | null>(null)
-
   const onAllocateUser = useCallback((projectId: string, platformUserId: string) => {
+    if (!canAllocate) return
     const u = getUserById(platformUserId)
     if (!u || u.status !== 'active') return
     const newUser: MockGanttUser = {
@@ -328,10 +341,11 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
       saveAllocationsGanttProjects(next)
       return next
     })
-  }, [])
+  }, [canAllocate])
 
   const onRemoveCollaborator = useCallback(
     (projectId: string, userId: string) => {
+      if (!canDeallocate) return
       setProjects((ps) => {
         const next = ps.map((p) => {
           if (p.id !== projectId) return p
@@ -346,7 +360,7 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
         return next
       })
     },
-    [],
+    [canDeallocate],
   )
 
   const {
@@ -472,11 +486,21 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
                     <GanttLaneProjectTitle>{project.title}</GanttLaneProjectTitle>
                     <GanttAllocateTriggerBtn
                       type="button"
+                      disabled={!canAllocate}
                       $open={allocPicker?.projectId === project.id}
-                      title="Alocar colaborador"
-                      aria-label={`Alocar colaborador em ${project.title}`}
+                      title={
+                        canAllocate
+                          ? 'Alocar colaborador'
+                          : 'Sem permissão para alocar colaboradores'
+                      }
+                      aria-label={
+                        canAllocate
+                          ? `Alocar colaborador em ${project.title}`
+                          : `Alocar colaborador em ${project.title} (sem permissão)`
+                      }
                       aria-expanded={allocPicker?.projectId === project.id}
                       onClick={(e) => {
+                        if (!canAllocate) return
                         const rect = (
                           e.currentTarget as HTMLButtonElement
                         ).getBoundingClientRect()
@@ -534,26 +558,30 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
                       <GanttLaneUserName>{user.name}</GanttLaneUserName>
                       <GanttLaneUserColorPickerWrap>
                         <GanttLaneUserColorSwatch $color={user.color} aria-hidden />
-                        <input
-                          type="color"
-                          value={toInputColorValue(user.color)}
-                          onChange={(e) =>
-                            onUserColorChange(project.id, user.id, e.target.value)
-                          }
-                          aria-label="Escolher cor da alocação"
-                          title="Cor da alocação na timeline"
-                        />
+                        {canUpdateTimeline ? (
+                          <input
+                            type="color"
+                            value={toInputColorValue(user.color)}
+                            onChange={(e) =>
+                              onUserColorChange(project.id, user.id, e.target.value)
+                            }
+                            aria-label="Escolher cor da alocação"
+                            title="Cor da alocação na timeline"
+                          />
+                        ) : null}
                       </GanttLaneUserColorPickerWrap>
                     </GanttLaneUserTextRow>
                   </GanttLaneUserCell>
-                  <GanttRemoveCollaboratorBtn
-                    type="button"
-                    title="Remover colaborador deste projeto"
-                    aria-label={`Remover ${user.name} deste projeto`}
-                    onClick={() => onRemoveCollaborator(project.id, user.id)}
-                  >
-                    <HiXMark size={14} strokeWidth={2} aria-hidden />
-                  </GanttRemoveCollaboratorBtn>
+                  {canDeallocate ? (
+                    <GanttRemoveCollaboratorBtn
+                      type="button"
+                      title="Remover colaborador deste projeto"
+                      aria-label={`Remover ${user.name} deste projeto`}
+                      onClick={() => onRemoveCollaborator(project.id, user.id)}
+                    >
+                      <HiXMark size={14} strokeWidth={2} aria-hidden />
+                    </GanttRemoveCollaboratorBtn>
+                  ) : null}
                 </GanttLaneUserRow>
                 <GanttTrackArea $minWidth={totalWidth}>
                   <GanttVirtualRowTrack
@@ -588,6 +616,7 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
                           projectId={project.id}
                           userId={user.id}
                           barIndex={i}
+                          canEdit={canUpdateTimeline}
                           onBarChange={onBarChange}
                         />
                       ) : null,

@@ -18,8 +18,8 @@ export type DemoUser = {
 export const DEMO_USERS: DemoUser[] = [
   {
     id: 'u1',
-    name: 'Ana Costa',
-    email: 'ana.costa@flow.com',
+    name: 'Administrador Flow',
+    email: 'admin@flow.com',
     role: 'Administradora',
     status: 'active',
     createdAt: '2025-11-02T10:15:00.000Z',
@@ -52,7 +52,7 @@ export const DEMO_USERS: DemoUser[] = [
     id: 'u5',
     name: 'Elena Rocha',
     email: 'elena.rocha@flow.com',
-    role: 'Administradora',
+    role: 'Editor',
     status: 'active',
     createdAt: '2025-12-11T11:30:45.000Z',
   },

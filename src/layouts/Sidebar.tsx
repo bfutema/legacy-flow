@@ -1,5 +1,6 @@
 import { FlowMark } from '../components/Brand'
 import { BrandLabel, MarkWrap } from '../components/Brand/FlowLogo.styles'
+import { Can } from '../contexts/AbilityContext'
 import {
   Aside,
   Brand,
@@ -49,6 +50,12 @@ const iconKanban = (
   </svg>
 )
 
+const iconAccess = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+)
+
 /* Organograma pausado — descomente o ícone e o <SidebarLink> abaixo para reativar o menu.
 const iconOrganogram = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -75,30 +82,48 @@ export function Sidebar({ collapsed }: Props) {
         {!collapsed ? <BrandLabel>Flow Admin</BrandLabel> : null}
       </Brand>
       <NavScroll $collapsed={collapsed}>
-        <SidebarLink $collapsed={collapsed} to="/" end>
-          <NavIcon>{iconDashboard}</NavIcon>
-          <NavLabel $collapsed={collapsed}>Dashboard</NavLabel>
-        </SidebarLink>
-        <SidebarLink $collapsed={collapsed} to="/projects">
-          <NavIcon>{iconProjetos}</NavIcon>
-          <NavLabel $collapsed={collapsed}>Projetos</NavLabel>
-        </SidebarLink>
-        <SidebarLink $collapsed={collapsed} to="/users">
-          <NavIcon>{iconUsuarios}</NavIcon>
-          <NavLabel $collapsed={collapsed}>Usuários</NavLabel>
-        </SidebarLink>
-        <SidebarLink $collapsed={collapsed} to="/allocations">
-          <NavIcon>{iconAlocacoes}</NavIcon>
-          <NavLabel $collapsed={collapsed}>Timeline</NavLabel>
-        </SidebarLink>
-        <SidebarLink $collapsed={collapsed} to="/tasks">
-          <NavIcon>{iconKanban}</NavIcon>
-          <NavLabel $collapsed={collapsed}>Tarefas</NavLabel>
-        </SidebarLink>
-        <SidebarLink $collapsed={collapsed} to="/reports">
-          <NavIcon>{iconRel}</NavIcon>
-          <NavLabel $collapsed={collapsed}>Relatórios</NavLabel>
-        </SidebarLink>
+        <Can I="read" a="Dashboard">
+          <SidebarLink $collapsed={collapsed} to="/" end>
+            <NavIcon>{iconDashboard}</NavIcon>
+            <NavLabel $collapsed={collapsed}>Dashboard</NavLabel>
+          </SidebarLink>
+        </Can>
+        <Can I="read" a="Project">
+          <SidebarLink $collapsed={collapsed} to="/projects">
+            <NavIcon>{iconProjetos}</NavIcon>
+            <NavLabel $collapsed={collapsed}>Projetos</NavLabel>
+          </SidebarLink>
+        </Can>
+        <Can I="read" a="User">
+          <SidebarLink $collapsed={collapsed} to="/users">
+            <NavIcon>{iconUsuarios}</NavIcon>
+            <NavLabel $collapsed={collapsed}>Usuários</NavLabel>
+          </SidebarLink>
+        </Can>
+        <Can I="read" a="Timeline">
+          <SidebarLink $collapsed={collapsed} to="/allocations">
+            <NavIcon>{iconAlocacoes}</NavIcon>
+            <NavLabel $collapsed={collapsed}>Timeline</NavLabel>
+          </SidebarLink>
+        </Can>
+        <Can I="read" a="TaskBoard">
+          <SidebarLink $collapsed={collapsed} to="/tasks">
+            <NavIcon>{iconKanban}</NavIcon>
+            <NavLabel $collapsed={collapsed}>Tarefas</NavLabel>
+          </SidebarLink>
+        </Can>
+        <Can I="read" a="Report">
+          <SidebarLink $collapsed={collapsed} to="/reports">
+            <NavIcon>{iconRel}</NavIcon>
+            <NavLabel $collapsed={collapsed}>Relatórios</NavLabel>
+          </SidebarLink>
+        </Can>
+        <Can I="manage" a="Security">
+          <SidebarLink $collapsed={collapsed} to="/access-control">
+            <NavIcon>{iconAccess}</NavIcon>
+            <NavLabel $collapsed={collapsed}>Acesso</NavLabel>
+          </SidebarLink>
+        </Can>
         {/* Organograma: rota /organogram ainda existe; descomente ícone + link no topo do arquivo.
         <SidebarLink $collapsed={collapsed} to="/organogram">
           <NavIcon>{iconOrganogram}</NavIcon>

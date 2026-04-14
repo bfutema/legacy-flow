@@ -266,6 +266,25 @@ export const ModelagemCard = styled(Link)`
   }
 `
 
+/** Versão somente leitura quando não há permissão de atualizar o projeto. */
+export const ModelagemCardLocked = styled.div`
+  display: block;
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem 1.75rem;
+  border-radius: 0.9rem;
+  color: inherit;
+  background: linear-gradient(
+    135deg,
+    ${({ theme }) => theme.primaryMuted} 0%,
+    ${({ theme }) => theme.surface} 55%
+  );
+  border: 1px solid ${({ theme }) => theme.border};
+  box-shadow: ${({ theme }) => theme.shadow};
+  cursor: not-allowed;
+  opacity: 0.92;
+`
+
 export const ModelagemTitle = styled.div`
   display: flex;
   align-items: center;

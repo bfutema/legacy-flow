@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Can } from '../contexts/AbilityContext'
 import { getDirectoryUsers } from '../data/directoryUsers'
 import { UsersDirectoryView } from '../components/UsersDirectoryView/UsersDirectoryView'
 import {
@@ -23,7 +24,9 @@ export function Users() {
       <UsersTop>
         <PageTitle>Usuários</PageTitle>
         <UsersActions>
-          <NewUserCta to="/users/new">Novo usuário</NewUserCta>
+          <Can I="create" a="User">
+            <NewUserCta to="/users/new">Novo usuário</NewUserCta>
+          </Can>
         </UsersActions>
       </UsersTop>
       <Lead>

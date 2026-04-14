@@ -69,6 +69,18 @@ export const TitleField = styled.input`
     background: ${({ theme }) => theme.surface};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.primaryMuted};
   }
+
+  &[readonly] {
+    cursor: default;
+    user-select: text;
+
+    &:hover,
+    &:focus {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+  }
 `
 
 export const DescField = styled.textarea`
@@ -106,6 +118,18 @@ export const DescField = styled.textarea`
     border-color: ${({ theme }) => theme.primary};
     background: ${({ theme }) => theme.surface};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.primaryMuted};
+  }
+
+  &[readonly] {
+    cursor: default;
+    user-select: text;
+
+    &:hover,
+    &:focus {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
   }
 `
 
@@ -162,6 +186,12 @@ export const ColorBoxLabel = styled.label`
 
   &:active {
     transform: scale(0.97);
+  }
+
+  &:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.62;
+    pointer-events: none;
   }
 `
 

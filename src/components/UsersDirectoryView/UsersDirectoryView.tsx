@@ -7,6 +7,7 @@ import {
   HiOutlineTableCells,
   HiOutlineUserCircle,
 } from 'react-icons/hi2'
+import { Can } from '../../contexts/AbilityContext'
 import type { DemoUser } from '../../data/demoUsers'
 import {
   loadUsersListViewMode,
@@ -139,13 +140,15 @@ export function UsersDirectoryView({ users }: Props) {
                         >
                           <HiOutlineUserCircle aria-hidden />
                         </TableIconActionLink>
-                        <TableIconActionLink
-                          to={`/users/${u.id}/edit`}
-                          aria-label={`Editar ${u.name}`}
-                          title="Editar"
-                        >
-                          <HiOutlinePencilSquare aria-hidden />
-                        </TableIconActionLink>
+                        <Can I="update" a="User">
+                          <TableIconActionLink
+                            to={`/users/${u.id}/edit`}
+                            aria-label={`Editar ${u.name}`}
+                            title="Editar"
+                          >
+                            <HiOutlinePencilSquare aria-hidden />
+                          </TableIconActionLink>
+                        </Can>
                       </TableActionGroup>
                     </TdActions>
                   </TableRow>

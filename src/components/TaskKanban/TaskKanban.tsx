@@ -1,3 +1,4 @@
+import { useAbility } from '@casl/react'
 import {
   DndContext,
   DragOverlay,
@@ -20,8 +21,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { HiOutlineSquares2X2 } from 'react-icons/hi2'
+import { AbilityContext } from '../../contexts/AbilityContext'
 import {
   AddTaskBtn,
   BoardColumns,
@@ -70,13 +72,16 @@ type TaskKanbanProps = {
 function SortableTaskCard({
   task,
   accentColor,
+  canDrag,
 }: {
   task: KanbanTask
   accentColor: string
+  canDrag: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: DND_ID.task(task.id),
     data: { type: 'task', taskId: task.id },
+    disabled: !canDrag,
   })
   const transformStr = CSS.Transform.toString(transform)
   const style = {
@@ -132,6 +137,10 @@ type SortableColumnViewProps = {
   taskIds: string[]
   tasks: Record<string, KanbanTask>
   onAddTask: () => void
+  /** `update:TaskBoard` — arrastar colunas e cartões. */
+  canUpdateBoard: boolean
+  /** `create:TaskBoard` — botão de nova tarefa. */
+  canAddTask: boolean
 }
 
 function SortableColumnView({
@@ -144,6 +153,8 @@ function SortableColumnView({
   taskIds,
   tasks,
   onAddTask,
+  canUpdateBoard,
+  canAddTask,
 }: SortableColumnViewProps) {
   const {
     attributes,
@@ -155,6 +166,7 @@ function SortableColumnView({
   } = useSortable({
     id: DND_ID.col(columnId),
     data: { type: 'column', columnId },
+    disabled: !canUpdateBoard,
   })
   const { active, over } = useDndContext()
   const dropHighlight = useMemo(() => {
@@ -179,7 +191,7 @@ function SortableColumnView({
       {...attributes}
     >
       <ColumnShell $isDragging={isDragging}>
-        <ColumnHeader $headerColor={headerColor} {...listeners}>
+        <ColumnHeader $headerColor={headerColor} {...(canUpdateBoard ? listeners : {})}>
           <ColumnTitleGroup>
             <ColumnTitle>{title}</ColumnTitle>
             <ColumnCount>
@@ -195,14 +207,21 @@ function SortableColumnView({
                 const t = tasks[tid]
                 if (!t) return null
                 return (
-                  <SortableTaskCard key={tid} task={t} accentColor={accentColor} />
+                  <SortableTaskCard
+                    key={tid}
+                    task={t}
+                    accentColor={accentColor}
+                    canDrag={canUpdateBoard}
+                  />
                 )
               })}
             </SortableContext>
           </TaskList>
-          <AddTaskBtn type="button" onClick={onAddTask}>
-            + Adicionar tarefa
-          </AddTaskBtn>
+          {canAddTask ? (
+            <AddTaskBtn type="button" onClick={onAddTask}>
+              + Adicionar tarefa
+            </AddTaskBtn>
+          ) : null}
         </ColumnDropZone>
       </ColumnShell>
     </KanbanColumnWrapper>
@@ -210,6 +229,9 @@ function SortableColumnView({
 }
 
 export function TaskKanban({ 'aria-label': ariaLabel = 'Quadro Kanban de tarefas' }: TaskKanbanProps) {
+  const ability = useAbility(AbilityContext)
+  const canUpdateBoard = ability.can('update', 'TaskBoard')
+  const canAddTask = ability.can('create', 'TaskBoard')
   const {
     state,
     setBoardState,
@@ -224,6 +246,10 @@ export function TaskKanban({ 'aria-label': ariaLabel = 'Quadro Kanban de tarefas
   const [activeColId, setActiveColId] = useState<string | null>(null)
   const [manageOpen, setManageOpen] = useState(false)
 
+  useEffect(() => {
+    if (!canUpdateBoard) setManageOpen(false)
+  }, [canUpdateBoard])
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -234,6 +260,7 @@ export function TaskKanban({ 'aria-label': ariaLabel = 'Quadro Kanban de tarefas
   )
 
   const onDragStart = useCallback((event: DragStartEvent) => {
+    if (!canUpdateBoard) return
     const id = String(event.active.id)
     if (id.startsWith('task-')) {
       setActiveTaskId(DND_ID.parseTask(id))
@@ -242,10 +269,11 @@ export function TaskKanban({ 'aria-label': ariaLabel = 'Quadro Kanban de tarefas
       setActiveColId(DND_ID.parseCol(id))
       setActiveTaskId(null)
     }
-  }, [])
+  }, [canUpdateBoard])
 
   const onDragOver = useCallback(
     (event: DragOverEvent) => {
+      if (!canUpdateBoard) return
       const { active, over } = event
       if (!over) return
       const aid = String(active.id)
@@ -293,11 +321,12 @@ export function TaskKanban({ 'aria-label': ariaLabel = 'Quadro Kanban de tarefas
         return s
       })
     },
-    [setBoardState],
+    [canUpdateBoard, setBoardState],
   )
 
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
+      if (!canUpdateBoard) return
       const { active, over } = event
       setActiveTaskId(null)
       setActiveColId(null)
@@ -340,7 +369,7 @@ export function TaskKanban({ 'aria-label': ariaLabel = 'Quadro Kanban de tarefas
         return s
       })
     },
-    [setBoardState],
+    [canUpdateBoard, setBoardState],
   )
 
   const overlayTask = activeTaskId ? state.tasks[activeTaskId] : null
@@ -356,24 +385,29 @@ export function TaskKanban({ 'aria-label': ariaLabel = 'Quadro Kanban de tarefas
       <Toolbar>
         <ToolbarLeft>
           <ToolbarHint>
-            Arraste o cabeçalho da coluna para reordenar. Arraste cartões entre colunas ou
-            dentro da mesma coluna. Alterações ficam salvas neste navegador.
+            {canUpdateBoard
+              ? 'Arraste o cabeçalho da coluna para reordenar. Arraste cartões entre colunas ou dentro da mesma coluna. Alterações ficam salvas neste navegador.'
+              : canAddTask
+                ? 'Você pode adicionar tarefas. Arrastar cartões, reordenar colunas e gerenciar o quadro exige a permissão de editar tarefas e colunas.'
+                : 'Modo somente leitura: seu perfil pode ver o quadro, mas não adicionar nem mover tarefas.'}
           </ToolbarHint>
         </ToolbarLeft>
-        <ToolbarActions>
-          <ToolButton type="button" onClick={() => setManageOpen((v) => !v)}>
-            {manageOpen ? 'Fechar colunas' : 'Gerenciar colunas'}
-          </ToolButton>
-          <ToolButton type="button" onClick={addColumn}>
-            + Coluna
-          </ToolButton>
-          <ToolButton type="button" onClick={resetBoard}>
-            Restaurar exemplo
-          </ToolButton>
-        </ToolbarActions>
+        {canUpdateBoard ? (
+          <ToolbarActions>
+            <ToolButton type="button" onClick={() => setManageOpen((v) => !v)}>
+              {manageOpen ? 'Fechar colunas' : 'Gerenciar colunas'}
+            </ToolButton>
+            <ToolButton type="button" onClick={addColumn}>
+              + Coluna
+            </ToolButton>
+            <ToolButton type="button" onClick={resetBoard}>
+              Restaurar exemplo
+            </ToolButton>
+          </ToolbarActions>
+        ) : null}
       </Toolbar>
 
-      {manageOpen ? (
+      {manageOpen && canUpdateBoard ? (
         <ManagePanel>
           <ManageTitle>Colunas</ManageTitle>
           {state.columnOrder.map((cid, i) => {
@@ -440,6 +474,8 @@ export function TaskKanban({ 'aria-label': ariaLabel = 'Quadro Kanban de tarefas
                     taskIds={c.taskIds}
                     tasks={state.tasks}
                     onAddTask={() => addTask(cid)}
+                    canUpdateBoard={canUpdateBoard}
+                    canAddTask={canAddTask}
                   />
                 )
               })}

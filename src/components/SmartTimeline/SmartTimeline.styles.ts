@@ -215,10 +215,16 @@ export const GanttAllocateTriggerBtn = styled.button<{ $open?: boolean }>`
   cursor: pointer;
   opacity: ${({ $open }) => ($open ? 1 : 0.65)};
 
-  &:hover {
+  &:hover:not(:disabled) {
     opacity: 1;
     background: ${({ theme }) => theme.surfaceHover};
     color: ${({ theme }) => theme.primary};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+    pointer-events: none;
   }
 `
 

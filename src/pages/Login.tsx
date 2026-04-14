@@ -38,9 +38,7 @@ export function Login() {
   return (
     <AuthPageStack>
       <Title>Entrar</Title>
-      <Subtitle>
-        Acesse o dashboard com seu e-mail. No modo demonstração, qualquer senha é aceita.
-      </Subtitle>
+      <Subtitle>Entre com seu e-mail e senha para continuar.</Subtitle>
       <Form onSubmit={handleSubmit}>
         <Label>
           E-mail

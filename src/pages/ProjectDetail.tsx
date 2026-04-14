@@ -1,3 +1,4 @@
+import { useAbility } from '@casl/react'
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTheme } from 'styled-components'
@@ -15,6 +16,7 @@ import {
   PRIMARY_DATABASE_LABELS,
   PRIMARY_DATABASES,
 } from '../data/databaseEngines'
+import { AbilityContext } from '../contexts/AbilityContext'
 import { deleteProject, resolveProjectById } from '../data/projects'
 import { useModelingDiagramStats } from '../hooks/useModelingDiagramStats'
 import { useProjectPrimaryDatabase } from '../hooks/useProjectPrimaryDatabase'
@@ -34,6 +36,7 @@ import {
   DiagramChartBox,
   DiagramHint,
   ModelagemCard,
+  ModelagemCardLocked,
   ModelagemDesc,
   ModelagemHint,
   ModelagemTitle,
@@ -61,9 +64,12 @@ const iconDb = (
 
 export function ProjectDetail() {
   const theme = useTheme()
+  const ability = useAbility(AbilityContext)
   const navigate = useNavigate()
   const { projectId } = useParams<{ projectId: string }>()
   const [infoTick, setInfoTick] = useState(0)
+  const canUpdateProject = ability.can('update', 'Project')
+  const canDeleteProject = ability.can('delete', 'Project')
 
   useEffect(() => {
     const bump = () => setInfoTick((n) => n + 1)
@@ -105,19 +111,21 @@ export function ProjectDetail() {
         description={project.description}
         updatedAt={project.updatedAt}
         titleTrailing={
-          <TrashDeleteButton
-            aria-label="Excluir projeto"
-            confirm={{
-              title: 'Excluir projeto',
-              message: `Tem certeza que deseja excluir “${project.name}”? O diagrama e as alterações salvas neste aparelho serão apagados.`,
-              confirmLabel: 'Excluir',
-              cancelLabel: 'Cancelar',
-            }}
-            onSuccess={() => {
-              deleteProject(project.id)
-              navigate('/projects', { replace: true })
-            }}
-          />
+          canDeleteProject ? (
+            <TrashDeleteButton
+              aria-label="Excluir projeto"
+              confirm={{
+                title: 'Excluir projeto',
+                message: `Tem certeza que deseja excluir “${project.name}”? O diagrama e as alterações salvas neste aparelho serão apagados.`,
+                confirmLabel: 'Excluir',
+                cancelLabel: 'Cancelar',
+              }}
+              onSuccess={() => {
+                deleteProject(project.id)
+                navigate('/projects', { replace: true })
+              }}
+            />
+          ) : null
         }
       />
       <DetailMain>
@@ -178,6 +186,7 @@ export function ProjectDetail() {
             <DbSelect
               id="project-primary-db"
               value={primaryDatabase}
+              disabled={!canUpdateProject}
               onChange={(e) => {
                 const v = e.target.value
                 if (isPrimaryDatabaseType(v)) setPrimaryDatabase(v)
@@ -194,17 +203,30 @@ export function ProjectDetail() {
               típicos deste motor (MySQL, PostgreSQL ou SQL Server).
             </DbHint>
           </DbSettingRow>
-          <ModelagemCard to={`/projects/${project.id}/modeling`}>
-            <ModelagemTitle>
-              {iconDb}
-              Modelagem do banco de dados
-            </ModelagemTitle>
-            <ModelagemDesc>
-              Abra o editor visual com grade, controles de zoom e minimapa para
-              desenhar tabelas e relacionamentos.
-            </ModelagemDesc>
-            <ModelagemHint>Clique para abrir →</ModelagemHint>
-          </ModelagemCard>
+          {canUpdateProject ? (
+            <ModelagemCard to={`/projects/${project.id}/modeling`}>
+              <ModelagemTitle>
+                {iconDb}
+                Modelagem do banco de dados
+              </ModelagemTitle>
+              <ModelagemDesc>
+                Abra o editor visual com grade, controles de zoom e minimapa para
+                desenhar tabelas e relacionamentos.
+              </ModelagemDesc>
+              <ModelagemHint>Clique para abrir →</ModelagemHint>
+            </ModelagemCard>
+          ) : (
+            <ModelagemCardLocked>
+              <ModelagemTitle>
+                {iconDb}
+                Modelagem do banco de dados
+              </ModelagemTitle>
+              <ModelagemDesc>
+                Seu papel não inclui edição de projetos. Peça a um administrador
+                a permissão &quot;Editar projeto e modelagem&quot;.
+              </ModelagemDesc>
+            </ModelagemCardLocked>
+          )}
         </DetailSideColumn>
       </DetailMain>
     </ProjectDetailRoot>
