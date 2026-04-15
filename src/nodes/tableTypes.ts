@@ -4,6 +4,8 @@ export type TableField = {
   name: string
   type: string
   pk?: boolean
+  /** Restrição UNIQUE (chave primária já implica unicidade) */
+  unique?: boolean
   /** Campo obrigatório (diamante cheio), se não for PK */
   required?: boolean
   /** Campo opcional (diamante vazio) */

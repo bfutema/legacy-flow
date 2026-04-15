@@ -155,9 +155,9 @@ export const Icons = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 0.12rem;
   width: 100%;
-  max-width: 1.75rem;
+  max-width: 2.1rem;
   flex-shrink: 0;
 `
 

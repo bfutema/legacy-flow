@@ -60,6 +60,7 @@ export function FieldConstraintsPanel({
 
   const notNull = field.pk === true || field.required === true
   const hasDefault = field.hasDefault === true
+  const isUnique = field.unique === true && field.pk !== true
   const defaultSql = field.defaultValueSql ?? ''
 
   const suggestions = useMemo(
@@ -99,7 +100,7 @@ export function FieldConstraintsPanel({
       <ConstraintsButton
         type="button"
         className="nodrag nopan"
-        $active={open || hasDefault}
+        $active={open || hasDefault || isUnique}
         title="Restrições e valor padrão (DEFAULT)"
         aria-expanded={open}
         aria-label="Abrir restrições do campo"
@@ -136,6 +137,22 @@ export function FieldConstraintsPanel({
           </ConstraintsRow>
           {field.pk ? (
             <ConstraintsHint>Chave primária é sempre NOT NULL.</ConstraintsHint>
+          ) : null}
+
+          <ConstraintsRow>
+            <input
+              type="checkbox"
+              checked={field.unique === true}
+              disabled={field.pk === true}
+              onChange={() => {
+                if (field.pk) return
+                onPatch({ unique: !field.unique })
+              }}
+            />
+            <span>Único (UNIQUE)</span>
+          </ConstraintsRow>
+          {field.pk ? (
+            <ConstraintsHint>Chave primária já é única; não é necessário UNIQUE.</ConstraintsHint>
           ) : null}
 
           <DefaultBlock>

@@ -97,6 +97,21 @@ function IconDiamondOutline() {
   )
 }
 
+/** Indicador de UNIQUE (não-PK); PK usa só a chave. */
+function IconUnique() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+        stroke="#38bdf8"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function fieldIcons(f: TableField) {
   if (f.pk) {
     return <IconKey />
@@ -215,7 +230,10 @@ function FieldRow({
         $typeEditing={isEditingType}
         $constraintsOpen={constraintsOpen}
       >
-        <Icons>{fieldIcons(f)}</Icons>
+        <Icons>
+          {fieldIcons(f)}
+          {f.unique && !f.pk ? <IconUnique /> : null}
+        </Icons>
         {isEditingName ? (
           <FieldNameInput
             ref={nameInputRef}
