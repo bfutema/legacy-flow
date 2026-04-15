@@ -26,6 +26,17 @@ function displayTableName(qualifiedId: string, allQualifiedIds: string[]): strin
   return qualifiedId
 }
 
+function splitQualifiedId(qualifiedId: string): { schemaName: string; tableName: string } {
+  const idx = qualifiedId.lastIndexOf('.')
+  if (idx <= 0 || idx >= qualifiedId.length - 1) {
+    return { schemaName: '', tableName: qualifiedId }
+  }
+  return {
+    schemaName: qualifiedId.slice(0, idx),
+    tableName: qualifiedId.slice(idx + 1),
+  }
+}
+
 /** Formato gerado pelos scripts em `src/sql/mysql-*.sql` ou `src/sql/psql-*.sql`. */
 export type DatabaseMapFkRow = {
   schema: string
@@ -305,6 +316,7 @@ export function convertDatabaseMapToReactFlow(
           ]
 
     const pos = positions.get(qualifiedId) ?? { x: 100, y: 100 }
+    const parsed = splitQualifiedId(qualifiedId)
     const tableName = displayTableName(qualifiedId, tableNames)
 
     return {
@@ -313,6 +325,7 @@ export function convertDatabaseMapToReactFlow(
       dragHandle: TABLE_NODE_DRAG_HANDLE,
       position: pos,
       data: {
+        schemaName: parsed.schemaName || undefined,
         tableName,
         fields,
         primaryColor,

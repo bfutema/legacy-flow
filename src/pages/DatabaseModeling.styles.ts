@@ -265,6 +265,41 @@ export const FsButton = styled.button`
   }
 `
 
+export const SchemaFilterWrap = styled.label`
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  padding: 0.45rem 0.55rem;
+  min-width: 11.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  box-shadow: ${({ theme }) => theme.shadow};
+`
+
+export const SchemaFilterLabel = styled.span`
+  font-size: 0.65rem;
+  color: ${({ theme }) => theme.textMuted};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`
+
+export const SchemaFilterSelect = styled.select`
+  font: inherit;
+  font-size: 0.74rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 0.3rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+  }
+`
+
 export const CardinalityPanel = styled.div`
   display: flex;
   flex-direction: column;

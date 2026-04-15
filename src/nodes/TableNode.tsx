@@ -57,6 +57,24 @@ function normalizeTableName(raw: string): string {
   return raw.trim().replace(/\s+/g, '_') || 'tabela'
 }
 
+function normalizeSchemaName(raw: string): string {
+  return raw.trim().replace(/\s+/g, '_')
+}
+
+function parseTableIdentifier(
+  raw: string,
+  fallbackSchema: string,
+): { schemaName: string; tableName: string } {
+  const input = raw.trim()
+  const dot = input.indexOf('.')
+  if (dot > 0 && dot < input.length - 1) {
+    const schemaName = normalizeSchemaName(input.slice(0, dot))
+    const tableName = normalizeTableName(input.slice(dot + 1))
+    return { schemaName, tableName }
+  }
+  return { schemaName: fallbackSchema, tableName: normalizeTableName(input) }
+}
+
 function normalizeFieldType(raw: string): string {
   const t = raw.trim()
   return t || 'text'
@@ -427,6 +445,7 @@ export const TableNode = memo(function TableNode({
     [engine],
   )
   const { tableName, fields } = data
+  const schemaName = data.schemaName?.trim() ?? ''
 
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(tableName)
@@ -444,34 +463,38 @@ export const TableNode = memo(function TableNode({
   }, [editingTitle])
 
   const commitTableName = useCallback(() => {
-    const next = normalizeTableName(titleDraft)
+    const parsed = parseTableIdentifier(titleDraft, schemaName)
     setNodes((nodes) =>
       nodes.map((node) => {
         if (node.id !== id || node.type !== 'table') return node
         const prev = node.data as TableNodeData
         return {
           ...node,
-          data: { ...prev, tableName: next },
+          data: {
+            ...prev,
+            schemaName: parsed.schemaName || undefined,
+            tableName: parsed.tableName,
+          },
         }
       }),
     )
     setEditingTitle(false)
-  }, [id, titleDraft, setNodes])
+  }, [id, titleDraft, schemaName, setNodes])
 
   const cancelTableName = useCallback(() => {
-    setTitleDraft(tableName)
+    setTitleDraft(schemaName ? `${schemaName}.${tableName}` : tableName)
     setEditingTitle(false)
-  }, [tableName])
+  }, [schemaName, tableName])
 
   const startEditTitle = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
       e.stopPropagation()
-      setTitleDraft(tableName)
+      setTitleDraft(schemaName ? `${schemaName}.${tableName}` : tableName)
       setEditingTitle(true)
       setFieldEdit(null)
       setConstraintsKey(null)
     },
-    [tableName],
+    [schemaName, tableName],
   )
 
   const closeFieldConstraints = useCallback(() => {
@@ -693,7 +716,9 @@ export const TableNode = memo(function TableNode({
             aria-label="Nome da tabela"
           />
         ) : (
-          <HeaderTitleText>{tableName}</HeaderTitleText>
+          <HeaderTitleText>
+            {schemaName ? `${schemaName}.${tableName}` : tableName}
+          </HeaderTitleText>
         )}
       </Header>
       <Body>

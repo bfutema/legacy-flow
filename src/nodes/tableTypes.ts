@@ -17,6 +17,8 @@ export type TableField = {
 }
 
 export type TableNodeData = {
+  /** Namespace lógico da tabela (schema no PostgreSQL/SQL Server; database no MySQL). */
+  schemaName?: string
   tableName: string
   fields: TableField[]
   /** Cor do header do nó (hex), espelha o projeto — presente após sync no canvas */

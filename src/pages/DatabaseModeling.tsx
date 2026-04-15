@@ -62,6 +62,9 @@ import {
   ModelingPageRoot,
   PageTitle,
   PanelActions,
+  SchemaFilterLabel,
+  SchemaFilterSelect,
+  SchemaFilterWrap,
 } from './DatabaseModeling.styles'
 import mysqlDbMapSql from '../sql/mysql-generate-db-map-in-object.sql?raw'
 import psqlDbMapSql from '../sql/psql-generate-db-map-in-object.sql?raw'
@@ -71,13 +74,28 @@ const nodeTypes = { table: TableNode }
 const edgeTypes = { relationshipStep: RelationshipStepEdge }
 
 const PERSIST_DEBOUNCE_MS = 450
+const ALL_SCHEMAS_FILTER = '__all__'
+
+function defaultSchemaByEngine(engine: string): string {
+  if (engine === 'postgresql') return 'public'
+  if (engine === 'mssql') return 'dbo'
+  if (engine === 'mysql') return 'default'
+  return 'default'
+}
+
+function namespaceLabelByEngine(engine: string): string {
+  if (engine === 'mysql') return 'Banco/Schema'
+  return 'Schema'
+}
 
 function DatabaseFlowCanvas({
   projectId,
   projectPrimaryColor,
+  sqlEngine,
 }: {
   projectId: string
   projectPrimaryColor: string
+  sqlEngine: string
 }) {
   const { confirm } = useConfirmDialog()
   const theme = useTheme()
@@ -97,6 +115,8 @@ function DatabaseFlowCanvas({
   const [selectedRelEdgeId, setSelectedRelEdgeId] = useState<string | null>(
     null,
   )
+  const [schemaFilter, setSchemaFilter] = useState(ALL_SCHEMAS_FILTER)
+  const namespaceLabel = useMemo(() => namespaceLabelByEngine(sqlEngine), [sqlEngine])
 
   /** Injeta a cor do projeto no `data` de cada nó — confiável com React Flow + memo */
   useEffect(() => {
@@ -126,6 +146,41 @@ function DatabaseFlowCanvas({
       return changed ? next : nds
     })
   }, [projectId, setNodes])
+
+  /** Diagramas antigos podem não ter schema; aplicar default por engine. */
+  useEffect(() => {
+    const fallbackSchema = defaultSchemaByEngine(sqlEngine)
+    setNodes((nds) => {
+      let changed = false
+      const next = nds.map((n) => {
+        if (n.type !== 'table') return n
+        const d = n.data as TableNodeData
+        const cur = d.schemaName?.trim() ?? ''
+        if (cur) return n
+        changed = true
+        return { ...n, data: { ...d, schemaName: fallbackSchema } }
+      })
+      return changed ? next : nds
+    })
+  }, [sqlEngine, setNodes])
+
+  const schemaOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const n of nodes) {
+      if (n.type !== 'table') continue
+      const d = n.data as TableNodeData
+      const schema = d.schemaName?.trim() ?? ''
+      if (schema) set.add(schema)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b))
+  }, [nodes])
+
+  useEffect(() => {
+    if (schemaFilter === ALL_SCHEMAS_FILTER) return
+    if (!schemaOptions.includes(schemaFilter)) {
+      setSchemaFilter(ALL_SCHEMAS_FILTER)
+    }
+  }, [schemaFilter, schemaOptions])
 
   useEffect(() => {
     const sync = () => setIsFullscreen(document.fullscreenElement === hostRef.current)
@@ -268,6 +323,7 @@ function DatabaseFlowCanvas({
   )
 
   const addTable = useCallback(() => {
+    const fallbackSchema = defaultSchemaByEngine(sqlEngine)
     setNodes((nds) => {
       const tableCount = nds.filter((n) => n.type === 'table').length
       const node: Node<TableNodeData, 'table'> = {
@@ -279,6 +335,7 @@ function DatabaseFlowCanvas({
           y: 40 + Math.floor(tableCount / 4) * 240,
         },
         data: {
+          schemaName: fallbackSchema,
           tableName: `tabela_${tableCount + 1}`,
           fields: [{ key: 'id', name: 'id', type: 'int8', pk: true }],
           primaryColor: projectPrimaryColor,
@@ -286,7 +343,7 @@ function DatabaseFlowCanvas({
       }
       return [...nds, node]
     })
-  }, [projectPrimaryColor, setNodes])
+  }, [projectPrimaryColor, setNodes, sqlEngine])
 
   const colorMode = theme.mode === 'dark' ? 'dark' : 'light'
 
@@ -304,6 +361,29 @@ function DatabaseFlowCanvas({
     [theme.textMuted],
   )
 
+  const nodesForView = useMemo(() => {
+    if (schemaFilter === ALL_SCHEMAS_FILTER) return nodes
+    return nodes.filter((n) => {
+      if (n.type !== 'table') return true
+      const d = n.data as TableNodeData
+      const schema = d.schemaName?.trim() ?? ''
+      return schema === schemaFilter
+    })
+  }, [nodes, schemaFilter])
+
+  const visibleNodeIds = useMemo(
+    () => new Set(nodesForView.map((n) => n.id)),
+    [nodesForView],
+  )
+
+  const edgesForView = useMemo(
+    () =>
+      edges.filter(
+        (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target),
+      ),
+    [edges, visibleNodeIds],
+  )
+
   return (
     <FlowHost ref={hostRef}>
       <ReactFlow
@@ -311,8 +391,8 @@ function DatabaseFlowCanvas({
         onInit={(inst) => {
           flowInstanceRef.current = inst
         }}
-        nodes={nodes}
-        edges={edges}
+        nodes={nodesForView}
+        edges={edgesForView}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
@@ -396,6 +476,21 @@ function DatabaseFlowCanvas({
         />
         <Panel position="top-right">
           <PanelActions>
+            <SchemaFilterWrap className="nodrag nopan">
+              <SchemaFilterLabel>{namespaceLabel}</SchemaFilterLabel>
+              <SchemaFilterSelect
+                value={schemaFilter}
+                onChange={(e) => setSchemaFilter(e.target.value)}
+                aria-label="Filtrar tabelas por schema"
+              >
+                <option value={ALL_SCHEMAS_FILTER}>Todos os schemas</option>
+                {schemaOptions.map((schema) => (
+                  <option key={schema} value={schema}>
+                    {schema}
+                  </option>
+                ))}
+              </SchemaFilterSelect>
+            </SchemaFilterWrap>
             <FsButton
               type="button"
               onClick={() => setImportModalOpen(true)}
@@ -534,6 +629,7 @@ export function DatabaseModeling() {
           key={project.id}
           projectId={project.id}
           projectPrimaryColor={primaryColor}
+          sqlEngine={primaryDatabase}
         />
       </ModelingPageRoot>
     </ModelingDatabaseProvider>
