@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import styled, { css, keyframes } from 'styled-components'
+import { ADMIN_MOBILE_MEDIA } from '../../layouts/adminShellTokens'
 
 const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
@@ -322,6 +323,17 @@ export const ListRowLink = styled(Link)<{ $delayIndex: number }>`
     outline: 2px solid ${({ theme }) => theme.primary};
     outline-offset: -2px;
   }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    column-gap: 0.65rem;
+    row-gap: 0.35rem;
+    align-items: center;
+    padding: 0.65rem 0.7rem;
+    flex-wrap: unset;
+  }
 `
 
 export const ListChevron = styled.span`
@@ -334,6 +346,18 @@ export const ListChevron = styled.span`
   svg {
     width: 1.25rem;
     height: 1.25rem;
+  }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    margin-left: 0;
+    align-self: center;
+
+    svg {
+      width: 1.1rem;
+      height: 1.1rem;
+    }
   }
 `
 
@@ -349,11 +373,27 @@ export const ListAvatar = styled.span`
   font-weight: 700;
   color: #fff;
   background: ${({ theme }) => theme.primary};
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 0.88rem;
+    border-radius: 0.5rem;
+    align-self: center;
+  }
 `
 
 export const ListMain = styled.div`
   flex: 1;
   min-width: 0;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
 `
 
 export const ListName = styled.span`
@@ -361,6 +401,14 @@ export const ListName = styled.span`
   font-weight: 600;
   font-size: 0.9rem;
   color: ${({ theme }) => theme.text};
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 0.86rem;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 `
 
 export const ListEmail = styled.span`
@@ -368,6 +416,14 @@ export const ListEmail = styled.span`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.textMuted};
   word-break: break-all;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 0.74rem;
+    word-break: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 `
 
 export const ListAside = styled.div`
@@ -377,6 +433,23 @@ export const ListAside = styled.div`
   gap: 0.5rem 0.75rem;
   font-size: 0.78rem;
   color: ${({ theme }) => theme.textMuted};
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    grid-column: 2;
+    grid-row: 2;
+    flex-wrap: nowrap;
+    gap: 0.35rem 0.5rem;
+    font-size: 0.72rem;
+    min-width: 0;
+    overflow: hidden;
+
+    & > span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+  }
 `
 
 const statusPill = css<{ $active: boolean }>`
@@ -400,6 +473,13 @@ const statusPill = css<{ $active: boolean }>`
 
 export const StatusPill = styled.span<{ $active: boolean }>`
   ${statusPill}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    flex-shrink: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
 `
 
 export const StatusPillTable = styled.span<{ $active: boolean }>`

@@ -1,4 +1,5 @@
 import styled, { css, keyframes } from 'styled-components'
+import { ADMIN_MOBILE_MEDIA } from '../../layouts/adminShellTokens'
 
 /** Sem translate/scale nos ancestrais do drag — o @dnd-kit mede rects com correção de transform. */
 const fadeIn = keyframes`
@@ -37,6 +38,11 @@ export const Toolbar = styled.div`
   background: ${({ theme }) => theme.surface};
   animation: ${fadeIn} 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
   ${reduceMotion}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    padding: 0.55rem 0.65rem;
+    gap: 0.55rem;
+  }
 `
 
 export const ToolbarLeft = styled.div`
@@ -51,6 +57,11 @@ export const ToolbarHint = styled.p`
   font-size: 0.85rem;
   color: ${({ theme }) => theme.textMuted};
   line-height: 1.4;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 0.78rem;
+    line-height: 1.38;
+  }
 `
 
 export const ToolbarActions = styled.div`
@@ -58,6 +69,12 @@ export const ToolbarActions = styled.div`
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.4rem;
+  }
 `
 
 export const ToolButton = styled.button`
@@ -89,6 +106,12 @@ export const ToolButton = styled.button`
   }
 
   ${reduceMotion}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    border-radius: 7px;
+  }
 `
 
 export const ManagePanel = styled.div`
@@ -121,7 +144,7 @@ export const ManageRow = styled.div<{ $index?: number }>`
   animation: ${fadeIn} 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: ${({ $index = 0 }) => `${$index * 0.04}`}s;
 
-  @media (max-width: 720px) {
+  @media ${ADMIN_MOBILE_MEDIA} {
     grid-template-columns: 1fr;
   }
 
@@ -188,6 +211,11 @@ export const BoardColumns = styled.div`
   min-height: 100%;
   box-sizing: border-box;
   width: max-content;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    gap: 0.65rem;
+    padding: 0.65rem 0.65rem 0.75rem;
+  }
 `
 
 /** Envolve cada coluna para entrada escalonada + ref do sortable. */
@@ -212,6 +240,11 @@ export const KanbanColumnWrapper = styled.div<{ $index: number; $dropHighlight?:
           transition: outline-color 0.15s ease;
         `
       : undefined}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    width: min(300px, calc(100vw - 2.5rem));
+    min-width: 240px;
+  }
 `
 
 /** Fantasma do drag (overlay): leve rotação estilo Monday. */

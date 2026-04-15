@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { HiUserPlus, HiXMark } from 'react-icons/hi2'
+import { HiChevronLeft, HiChevronRight, HiUserPlus, HiXMark } from 'react-icons/hi2'
 import { AbilityContext } from '../../../contexts/AbilityContext'
 import {
   GanttAllocEmpty,
@@ -23,9 +23,11 @@ import {
   GanttAllocateTriggerBtn,
   GanttDayBgCell,
   GanttLaneHeader,
+  GanttLaneHeaderRow,
   GanttLaneMonthNav,
   GanttLaneProjectTitle,
   GanttLaneRange,
+  GanttLaneToggleBtn,
   GanttLaneUserAvatar,
   GanttLaneUserCell,
   GanttLaneUserColorPickerWrap,
@@ -35,6 +37,7 @@ import {
   GanttLaneUserTextRow,
   GanttMonthBtn,
   GanttMonthLabel,
+  GanttProjectLaneCollapsed,
   GanttProjectLaneRow,
   GanttProjectLaneStack,
   GanttProjectTitleRow,
@@ -72,6 +75,8 @@ const WEEKDAY_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'] as const
 type Props = {
   scale: TimelineScale
   dayWidth?: number
+  laneOpen: boolean
+  onToggleLane: () => void
 }
 
 function dayWidthForScale(scale: TimelineScale): number {
@@ -230,7 +235,12 @@ function CollaboratorAllocPopover({
   )
 }
 
-export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
+export function TimelineGanttBody({
+  scale,
+  dayWidth: dayWidthProp,
+  laneOpen,
+  onToggleLane,
+}: Props) {
   const ability = useAbility(AbilityContext)
   const canAllocate = ability.can('create', 'Timeline')
   const canDeallocate = ability.can('delete', 'Timeline')
@@ -395,7 +405,11 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
     projects.find((p) => p.id === allocPicker.projectId)?.users.map((u) => u.id)
 
   return (
-    <GanttScrollArea ref={scrollRef} onScroll={onScroll}>
+    <GanttScrollArea
+      id="timeline-gantt-scroll"
+      ref={scrollRef}
+      onScroll={onScroll}
+    >
       {allocPicker && allocExcluded ? (
         <CollaboratorAllocPopover
           anchor={allocPicker.anchor}
@@ -411,25 +425,47 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
         <GanttStickyHeaderSection>
           <GanttGridRowPair $minTrackWidth={totalWidth}>
             <GanttHeaderStickyLane>
-            <GanttLaneHeader>Projetos</GanttLaneHeader>
-            <GanttLaneMonthNav>
-              <GanttMonthBtn
-                type="button"
-                aria-label="Mês anterior"
-                onClick={() => shiftViewportByDays(-30)}
-              >
-                ‹
-              </GanttMonthBtn>
-              <GanttMonthLabel>{monthNavLabel}</GanttMonthLabel>
-              <GanttMonthBtn
-                type="button"
-                aria-label="Próximo mês"
-                onClick={() => shiftViewportByDays(30)}
-              >
-                ›
-              </GanttMonthBtn>
-            </GanttLaneMonthNav>
-          </GanttHeaderStickyLane>
+              <GanttLaneHeaderRow $collapsed={!laneOpen}>
+                <GanttLaneToggleBtn
+                  type="button"
+                  onClick={onToggleLane}
+                  aria-expanded={laneOpen}
+                  aria-controls="timeline-gantt-scroll"
+                  aria-label={
+                    laneOpen
+                      ? 'Recolher painel lateral de projetos e colaboradores'
+                      : 'Expandir painel lateral de projetos e colaboradores'
+                  }
+                  title={laneOpen ? 'Recolher painel' : 'Expandir painel'}
+                >
+                  {laneOpen ? (
+                    <HiChevronLeft strokeWidth={2} aria-hidden />
+                  ) : (
+                    <HiChevronRight strokeWidth={2} aria-hidden />
+                  )}
+                </GanttLaneToggleBtn>
+                {laneOpen ? <GanttLaneHeader>Projetos</GanttLaneHeader> : null}
+              </GanttLaneHeaderRow>
+              {laneOpen ? (
+                <GanttLaneMonthNav>
+                  <GanttMonthBtn
+                    type="button"
+                    aria-label="Mês anterior"
+                    onClick={() => shiftViewportByDays(-30)}
+                  >
+                    ‹
+                  </GanttMonthBtn>
+                  <GanttMonthLabel>{monthNavLabel}</GanttMonthLabel>
+                  <GanttMonthBtn
+                    type="button"
+                    aria-label="Próximo mês"
+                    onClick={() => shiftViewportByDays(30)}
+                  >
+                    ›
+                  </GanttMonthBtn>
+                </GanttLaneMonthNav>
+              ) : null}
+            </GanttHeaderStickyLane>
           <GanttVirtualTimeTrackSticky $width={totalWidth}>
             {visibleColIndices.map((col) => {
               const d = getDateForColumn(col)
@@ -481,16 +517,51 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
           <Fragment key={project.id}>
             <GanttGridRowPair $minTrackWidth={totalWidth}>
               <GanttProjectLaneRow>
-                <GanttProjectLaneStack>
-                  <GanttProjectTitleRow>
-                    <GanttLaneProjectTitle>{project.title}</GanttLaneProjectTitle>
+                {laneOpen ? (
+                  <GanttProjectLaneStack>
+                    <GanttProjectTitleRow>
+                      <GanttLaneProjectTitle>{project.title}</GanttLaneProjectTitle>
+                      <GanttAllocateTriggerBtn
+                        type="button"
+                        disabled={!canAllocate}
+                        $open={allocPicker?.projectId === project.id}
+                        title={
+                          canAllocate
+                            ? 'Alocar colaborador'
+                            : 'Sem permissão para alocar colaboradores'
+                        }
+                        aria-label={
+                          canAllocate
+                            ? `Alocar colaborador em ${project.title}`
+                            : `Alocar colaborador em ${project.title} (sem permissão)`
+                        }
+                        aria-expanded={allocPicker?.projectId === project.id}
+                        onClick={(e) => {
+                          if (!canAllocate) return
+                          const rect = (
+                            e.currentTarget as HTMLButtonElement
+                          ).getBoundingClientRect()
+                          setAllocPicker((prev) =>
+                            prev?.projectId === project.id
+                              ? null
+                              : { projectId: project.id, anchor: rect },
+                          )
+                        }}
+                      >
+                        <HiUserPlus size={15} strokeWidth={2} aria-hidden />
+                      </GanttAllocateTriggerBtn>
+                    </GanttProjectTitleRow>
+                    <GanttLaneRange>{project.rangeLabel}</GanttLaneRange>
+                  </GanttProjectLaneStack>
+                ) : (
+                  <GanttProjectLaneCollapsed>
                     <GanttAllocateTriggerBtn
                       type="button"
                       disabled={!canAllocate}
                       $open={allocPicker?.projectId === project.id}
                       title={
                         canAllocate
-                          ? 'Alocar colaborador'
+                          ? `Alocar colaborador em ${project.title}`
                           : 'Sem permissão para alocar colaboradores'
                       }
                       aria-label={
@@ -513,9 +584,8 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
                     >
                       <HiUserPlus size={15} strokeWidth={2} aria-hidden />
                     </GanttAllocateTriggerBtn>
-                  </GanttProjectTitleRow>
-                  <GanttLaneRange>{project.rangeLabel}</GanttLaneRange>
-                </GanttProjectLaneStack>
+                  </GanttProjectLaneCollapsed>
+                )}
               </GanttProjectLaneRow>
               <GanttTrackArea $minWidth={totalWidth}>
                 <GanttVirtualRowTrack
@@ -545,7 +615,7 @@ export function TimelineGanttBody({ scale, dayWidth: dayWidthProp }: Props) {
 
             {project.users.map((user) => (
               <GanttGridRowPair key={user.id} $minTrackWidth={totalWidth}>
-                <GanttLaneUserRow>
+                <GanttLaneUserRow $laneCollapsed={!laneOpen}>
                   <GanttLaneUserCell>
                     <GanttLaneUserAvatar $color={user.color} aria-hidden>
                       {user.name

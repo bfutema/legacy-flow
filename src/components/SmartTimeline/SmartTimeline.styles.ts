@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components'
 import type { DefaultTheme } from 'styled-components'
+import { ADMIN_MOBILE_MEDIA } from '../../layouts/adminShellTokens'
 import { TIMELINE_UI } from './constants'
 
 /** Fim de semana: mistura com `border` — no dark, evita `surfaceHover` igual à borda (some o traço sáb/dom). */
@@ -12,7 +13,7 @@ function ganttWeekendSurface(theme: DefaultTheme, weekend: boolean) {
 }
 
 const laneSticky = css`
-  width: ${TIMELINE_UI.laneWidth}px;
+  width: var(--gantt-lane-width, ${TIMELINE_UI.laneWidth}px);
   flex-shrink: 0;
   position: sticky;
   left: 0;
@@ -31,7 +32,8 @@ const laneSticky = css`
       : undefined}
 `
 
-export const Root = styled.section`
+export const Root = styled.section<{ $laneWidth: number }>`
+  --gantt-lane-width: ${({ $laneWidth }) => `${$laneWidth}px`};
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -61,19 +63,20 @@ export const GanttScrollInner = styled.div<{ $minTrackWidth: number }>`
   align-items: stretch;
   min-width: max(
     100%,
-    ${({ $minTrackWidth }) => TIMELINE_UI.laneWidth + $minTrackWidth}px
+    ${({ $minTrackWidth }) =>
+      `calc(var(--gantt-lane-width, ${TIMELINE_UI.laneWidth}px) + ${$minTrackWidth}px)`}
   );
 `
 
 const ganttRowGrid = ($minTrackWidth: number) => css`
   display: grid;
   grid-template-columns:
-    ${TIMELINE_UI.laneWidth}px
+    var(--gantt-lane-width, ${TIMELINE_UI.laneWidth}px)
     minmax(${$minTrackWidth}px, 1fr);
   align-items: stretch;
   min-width: max(
     100%,
-    ${TIMELINE_UI.laneWidth + $minTrackWidth}px
+    calc(var(--gantt-lane-width, ${TIMELINE_UI.laneWidth}px) + ${$minTrackWidth}px)
   );
 `
 
@@ -102,6 +105,52 @@ export const GanttStickyLane = styled.div`
   gap: 0.35rem;
   padding: 0.5rem 0.75rem;
   min-height: ${TIMELINE_UI.headerLaneMinHeight}px;
+`
+
+export const GanttLaneHeaderRow = styled.div<{ $collapsed: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  width: 100%;
+
+  ${({ $collapsed }) =>
+    $collapsed &&
+    css`
+      justify-content: center;
+    `}
+`
+
+export const GanttLaneToggleBtn = styled.button`
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.4rem;
+  background: ${({ theme }) => theme.surfaceHover};
+  color: ${({ theme }) => theme.textMuted};
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+
+  &:hover {
+    color: ${({ theme }) => theme.text};
+    background: ${({ theme }) => theme.border};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.primary};
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
 `
 
 /** Coluna esquerda da régua: sticky horizontal (`left`); vertical vem de GanttStickyHeaderSection. */
@@ -171,6 +220,15 @@ export const GanttProjectLaneRow = styled.div`
   min-height: ${TIMELINE_UI.projectRowHeight}px;
 `
 
+export const GanttProjectLaneCollapsed = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: ${TIMELINE_UI.projectRowHeight - 8}px;
+`
+
 export const GanttLaneProjectTitle = styled.div`
   font-size: 0.8125rem;
   font-weight: 700;
@@ -233,6 +291,7 @@ export const GanttAllocPopover = styled.div`
   z-index: 400;
   width: min(18rem, calc(100vw - 1.5rem));
   max-height: min(22rem, calc(100vh - 6rem));
+  max-height: min(22rem, calc(100dvh - 6rem));
   display: flex;
   flex-direction: column;
   border-radius: 0.5rem;
@@ -240,6 +299,11 @@ export const GanttAllocPopover = styled.div`
   background: ${({ theme }) => theme.surface};
   box-shadow: ${({ theme }) => theme.shadow};
   overflow: hidden;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    width: min(18rem, calc(100vw - 1rem));
+    max-height: min(20rem, calc(100dvh - 5rem));
+  }
 `
 
 export const GanttAllocPopoverHeader = styled.div`
@@ -383,7 +447,16 @@ export const GanttRemoveCollaboratorBtn = styled.button`
   }
 `
 
-export const GanttLaneUserRow = styled.div`
+export const GanttLaneUserTextRow = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+`
+
+export const GanttLaneUserRow = styled.div<{ $laneCollapsed?: boolean }>`
   ${laneSticky};
   display: flex;
   align-items: center;
@@ -391,6 +464,14 @@ export const GanttLaneUserRow = styled.div`
   padding: 0.35rem 0.45rem 0.35rem
     calc(0.75rem + ${TIMELINE_UI.laneUserExtraIndentPx}px);
   min-height: ${TIMELINE_UI.userRowHeight}px;
+
+  ${({ $laneCollapsed }) =>
+    $laneCollapsed &&
+    css`
+      padding-left: 0.35rem;
+      padding-right: 0.35rem;
+      justify-content: center;
+    `}
 
   @media (hover: hover) and (pointer: fine) {
     &:hover ${GanttRemoveCollaboratorBtn} {
@@ -417,15 +498,22 @@ export const GanttLaneUserRow = styled.div`
   & ${GanttRemoveCollaboratorBtn}:is(:hover, :focus-visible) {
     opacity: 1;
   }
-`
 
-export const GanttLaneUserTextRow = styled.div`
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-width: 0;
+  ${({ $laneCollapsed }) =>
+    $laneCollapsed &&
+    css`
+      ${GanttLaneUserCell} {
+        justify-content: center;
+      }
+
+      ${GanttLaneUserTextRow} {
+        display: none;
+      }
+
+      ${GanttRemoveCollaboratorBtn} {
+        display: none;
+      }
+    `}
 `
 
 export const GanttLaneUserName = styled.span`
@@ -521,7 +609,7 @@ export const GanttVirtualTimeTrackSticky = styled(GanttVirtualTimeTrack)`
  */
 export const GanttTodayIndicatorTrack = styled.div<{ $trackWidth: number }>`
   position: absolute;
-  left: ${TIMELINE_UI.laneWidth}px;
+  left: var(--gantt-lane-width, ${TIMELINE_UI.laneWidth}px);
   top: ${TIMELINE_UI.headerLaneMinHeight}px;
   width: ${({ $trackWidth }) => $trackWidth}px;
   bottom: 0;

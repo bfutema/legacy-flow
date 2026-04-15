@@ -13,6 +13,9 @@ import {
 
 type Props = {
   onToggleSidebar: () => void
+  /** Modo gaveta (mobile): controla rótulos ARIA do botão menu. */
+  mobileNav?: boolean
+  mobileNavOpen?: boolean
 }
 
 const iconMenu = (
@@ -40,7 +43,11 @@ const iconLogout = (
   </svg>
 )
 
-export function Header({ onToggleSidebar }: Props) {
+export function Header({
+  onToggleSidebar,
+  mobileNav = false,
+  mobileNavOpen = false,
+}: Props) {
   const { mode, toggleTheme } = useThemeMode()
   const { userEmail, logout } = useAuth()
   const navigate = useNavigate()
@@ -56,7 +63,15 @@ export function Header({ onToggleSidebar }: Props) {
         <MenuButton
           type="button"
           onClick={onToggleSidebar}
-          aria-label="Abrir ou fechar menu"
+          aria-label={
+            mobileNav
+              ? mobileNavOpen
+                ? 'Fechar menu'
+                : 'Abrir menu'
+              : 'Recolher ou expandir menu lateral'
+          }
+          aria-expanded={mobileNav ? mobileNavOpen : undefined}
+          aria-controls={mobileNav ? 'admin-mobile-nav' : undefined}
         >
           {iconMenu}
         </MenuButton>

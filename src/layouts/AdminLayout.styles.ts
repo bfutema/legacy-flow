@@ -4,6 +4,7 @@ import { ADMIN_CONTENT_GUTTER_X } from './adminShellTokens'
 export const Shell = styled.div`
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 100%;
   background: ${({ theme }) => theme.bg};
@@ -16,7 +17,35 @@ export const Main = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
+`
+
+export const MobileNavBackdrop = styled.button.attrs({ type: 'button' })`
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: block;
+  border: none;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: rgba(15, 23, 42, 0.42);
+  cursor: pointer;
+  animation: flowBackdropIn 0.2s ease both;
+
+  @keyframes flowBackdropIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `
 
 export const Content = styled.main`

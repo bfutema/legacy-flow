@@ -4,6 +4,8 @@
 export const TIMELINE_UI = {
   /** Largura da coluna fixa (projetos / usuários). */
   laneWidth: 260,
+  /** Coluna recolhida: só ícones / avatares + botão de expandir. */
+  laneWidthCollapsed: 48,
   /** Recuo extra (px) à esquerda nas linhas de colaborador vs projeto — efeito escadinha. */
   laneUserExtraIndentPx: 14,
   /** Largura de cada dia na régua (px). */

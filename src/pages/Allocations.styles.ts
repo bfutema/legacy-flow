@@ -1,5 +1,5 @@
 import styled, { css, keyframes } from 'styled-components'
-import { ADMIN_CONTENT_GUTTER_X } from '../layouts/adminShellTokens'
+import { ADMIN_CONTENT_GUTTER_X, ADMIN_MOBILE_MEDIA } from '../layouts/adminShellTokens'
 
 const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
@@ -65,6 +65,11 @@ export const TopStrip = styled.div`
   background: ${({ theme }) =>
     theme.mode === 'dark' ? theme.bg : theme.surface};
   ${enter(fadeUp, '0.44s', '0s')}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    padding: 0.65rem ${ADMIN_CONTENT_GUTTER_X};
+    gap: 0.55rem 0.75rem;
+  }
 `
 
 export const PageTitle = styled.h1`
@@ -72,6 +77,11 @@ export const PageTitle = styled.h1`
   font-size: 1.35rem;
   font-weight: 700;
   color: ${({ theme }) => theme.text};
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 1.12rem;
+    line-height: 1.25;
+  }
 `
 
 export const TitleRow = styled.div`
@@ -103,6 +113,11 @@ export const CollaboratorsToggle = styled.button<{ $on: boolean }>`
     outline: 2px solid ${({ theme }) => theme.primary};
     outline-offset: 3px;
     border-radius: 0.25rem;
+  }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 0.78rem;
+    gap: 0.4rem;
   }
 `
 
@@ -143,6 +158,13 @@ export const FiltersStrip = styled.div`
   background: ${({ theme }) =>
     theme.mode === 'dark' ? theme.bg : theme.surface};
   ${enter(fadeUp, '0.44s', '0.07s')}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.6rem ${ADMIN_CONTENT_GUTTER_X} 0.65rem;
+  }
 `
 
 export const FiltersLeft = styled.div`
@@ -181,6 +203,11 @@ export const SearchWrap = styled.div`
 
   &:focus-within svg {
     color: ${({ theme }) => theme.primary};
+  }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    max-width: none;
+    width: 100%;
   }
 `
 
@@ -254,6 +281,12 @@ export const FiltersRight = styled.div`
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.45rem;
+  }
 `
 
 export const ScaleGroup = styled.div`
@@ -262,6 +295,12 @@ export const ScaleGroup = styled.div`
   border-radius: 0.45rem;
   border: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme }) => theme.surfaceHover};
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+  }
 `
 
 export const ScaleBtn = styled.button<{ $active: boolean }>`
@@ -335,6 +374,13 @@ export const DateButton = styled.button`
     outline: 2px solid ${({ theme }) => theme.primary};
     outline-offset: 1px;
   }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    flex-shrink: 0;
+    padding: 0.38rem 0.5rem;
+    font-size: 0.72rem;
+    gap: 0.35rem;
+  }
 `
 
 export const TimelineFill = styled.div`
@@ -343,6 +389,10 @@ export const TimelineFill = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    min-height: clamp(200px, calc(100dvh - 12rem), 70dvh);
+  }
 
   & > * {
     @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import styled, { keyframes } from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
+import { ADMIN_MOBILE_MEDIA } from '../layouts/adminShellTokens'
 
 const fadeUp = keyframes`
   from {
@@ -49,6 +50,11 @@ const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 /** Cabeçalho + canvas: filhos diretos na ordem de DatabaseModeling.tsx */
 export const ModelingPageRoot = styled.div`
+  @media ${ADMIN_MOBILE_MEDIA} {
+    padding: 0 clamp(0.5rem, 2.5vw, 0.85rem);
+    box-sizing: border-box;
+  }
+
   & > * {
     @media (prefers-reduced-motion: no-preference) {
       animation: ${fadeUp} 0.5s ${easeOut} both;
@@ -96,6 +102,11 @@ export const PageTitle = styled.h1`
   font-size: 1.35rem;
   font-weight: 600;
   color: ${({ theme }) => theme.text};
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 1.15rem;
+    line-height: 1.25;
+  }
 `
 
 export const FlowPersistHint = styled.p`
@@ -103,11 +114,17 @@ export const FlowPersistHint = styled.p`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.textMuted};
   line-height: 1.4;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    margin-bottom: 0.65rem;
+    font-size: 0.75rem;
+  }
 `
 
 export const FlowHost = styled.div`
   width: 100%;
   height: clamp(420px, calc(100vh - 14rem), 820px);
+  height: clamp(420px, calc(100dvh - 14rem), 820px);
   min-height: 380px;
   border-radius: 0.75rem;
   overflow: hidden;
@@ -137,6 +154,20 @@ export const FlowHost = styled.div`
     }
   }
 
+  .react-flow__panel.modeling-controls-panel {
+    left: 0.5rem;
+    right: 0.5rem;
+    top: 0.5rem;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    pointer-events: none;
+
+    & > * {
+      pointer-events: auto;
+    }
+  }
+
   .react-flow__controls {
     @media (prefers-reduced-motion: no-preference) {
       animation: ${fadeUp} 0.45s ${easeOut} 0.32s both;
@@ -162,6 +193,21 @@ export const FlowHost = styled.div`
     max-width: min(21rem, 100%);
   }
 
+  @media ${ADMIN_MOBILE_MEDIA} {
+    height: clamp(240px, calc(100dvh - 9.5rem), 820px);
+    min-height: 220px;
+    border-radius: 0.5rem;
+
+    .react-flow__node.react-flow__node-table {
+      max-width: min(19rem, calc(100vw - 1.25rem));
+    }
+
+    .react-flow__controls {
+      transform: scale(0.92);
+      transform-origin: bottom left;
+    }
+  }
+
   /* Reforço no dark: ícones e fundo dos botões (colorMode dark já aplica a classe .dark) */
   .react-flow.dark .react-flow__controls {
     --xy-controls-button-background-color: #1e293b;
@@ -181,6 +227,7 @@ export const FlowHost = styled.div`
   &:fullscreen,
   &:-webkit-full-screen {
     height: 100vh;
+    height: 100dvh;
     width: 100vw;
     max-height: none;
     border-radius: 0;
@@ -263,6 +310,30 @@ export const FsButton = styled.button`
       transition: none;
     }
   }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    min-width: 1.85rem;
+    min-height: 1.85rem;
+    padding: 0.26rem;
+    border-radius: 0.35rem;
+
+    & > svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .fs-btn-label {
+      display: none;
+    }
+
+    &:hover,
+    &:focus-visible {
+      justify-content: center;
+      gap: 0;
+      padding: 0.26rem;
+      min-width: 1.85rem;
+    }
+  }
 `
 
 export const SchemaFilterWrap = styled.label`
@@ -275,6 +346,12 @@ export const SchemaFilterWrap = styled.label`
   border: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme }) => theme.surface};
   box-shadow: ${({ theme }) => theme.shadow};
+  box-sizing: border-box;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    width: 100%;
+    min-width: 0;
+  }
 `
 
 export const SchemaFilterLabel = styled.span`
@@ -298,6 +375,57 @@ export const SchemaFilterSelect = styled.select`
     outline: none;
     border-color: ${({ theme }) => theme.primary};
   }
+`
+
+export const ModelingControlsStrip = styled.div<{ $mobile: boolean }>`
+  display: flex;
+  align-items: flex-start;
+  box-sizing: border-box;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 100%;
+
+  ${({ $mobile }) =>
+    $mobile
+      ? css`
+          flex-direction: row;
+          flex-wrap: nowrap;
+          align-items: center;
+
+          ${SchemaFilterWrap} {
+            flex: 0 1 auto;
+            width: auto;
+            min-width: 0;
+            max-width: min(11rem, 46vw);
+            padding: 0.38rem 0.45rem;
+          }
+
+          ${SchemaFilterSelect} {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.28rem;
+          }
+
+          ${PanelActions} {
+            flex: 1 1 auto;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.28rem;
+            min-width: 0;
+          }
+        `
+      : css`
+          flex-direction: column;
+          align-items: flex-end;
+          margin-left: auto;
+          width: fit-content;
+          max-width: 100%;
+
+          ${PanelActions} {
+            align-items: flex-end;
+          }
+        `}
 `
 
 export const CardinalityPanel = styled.div`

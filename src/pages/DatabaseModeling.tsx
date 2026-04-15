@@ -49,6 +49,8 @@ import {
 } from '../nodes/initialFlow'
 import { TableNode } from '../nodes/TableNode'
 import type { TableNodeData } from '../nodes/tableTypes'
+import { useMediaQuery } from '../hooks/useMediaQuery'
+import { ADMIN_MOBILE_MEDIA } from '../layouts/adminShellTokens'
 import {
   BackLink,
   CardinalityField,
@@ -59,6 +61,7 @@ import {
   FlowHost,
   FlowPersistHint,
   FsButton,
+  ModelingControlsStrip,
   ModelingPageRoot,
   PageTitle,
   PanelActions,
@@ -99,6 +102,7 @@ function DatabaseFlowCanvas({
 }) {
   const { confirm } = useConfirmDialog()
   const theme = useTheme()
+  const isMobileControls = useMediaQuery(ADMIN_MOBILE_MEDIA)
   const hostRef = useRef<HTMLDivElement>(null)
   const flowInstanceRef = useRef<ReactFlowInstance | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -474,8 +478,8 @@ function DatabaseFlowCanvas({
           showInteractive
           position="bottom-left"
         />
-        <Panel position="top-right">
-          <PanelActions>
+        <Panel position="top-left" className="modeling-controls-panel">
+          <ModelingControlsStrip $mobile={isMobileControls} className="nodrag nopan">
             <SchemaFilterWrap className="nodrag nopan">
               <SchemaFilterLabel>{namespaceLabel}</SchemaFilterLabel>
               <SchemaFilterSelect
@@ -491,94 +495,96 @@ function DatabaseFlowCanvas({
                 ))}
               </SchemaFilterSelect>
             </SchemaFilterWrap>
-            <FsButton
-              type="button"
-              onClick={() => setImportModalOpen(true)}
-              title="Importar esquema: script MySQL/MariaDB + JSON gerado na consulta"
-              aria-label="Importar esquema a partir de script MySQL ou MariaDB e JSON"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                aria-hidden
+            <PanelActions className="nodrag nopan">
+              <FsButton
+                type="button"
+                onClick={() => setImportModalOpen(true)}
+                title="Importar esquema: script MySQL/MariaDB + JSON gerado na consulta"
+                aria-label="Importar esquema a partir de script MySQL ou MariaDB e JSON"
               >
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-              </svg>
-              <span className="fs-btn-label">Importar do banco</span>
-            </FsButton>
-            <FsButton
-              type="button"
-              onClick={addTable}
-              title="Adicionar nova tabela ao canvas"
-              aria-label="Adicionar nova tabela ao canvas"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                aria-hidden
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  aria-hidden
+                >
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                <span className="fs-btn-label">Importar do banco</span>
+              </FsButton>
+              <FsButton
+                type="button"
+                onClick={addTable}
+                title="Adicionar nova tabela ao canvas"
+                aria-label="Adicionar nova tabela ao canvas"
               >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              <span className="fs-btn-label">Nova tabela</span>
-            </FsButton>
-            <FsButton
-              type="button"
-              onClick={toggleFullscreen}
-              title={
-                isFullscreen
-                  ? 'Sair da tela cheia (Esc)'
-                  : 'Expandir canvas em tela cheia'
-              }
-              aria-label={
-                isFullscreen
-                  ? 'Sair da tela cheia'
-                  : 'Expandir canvas em tela cheia'
-              }
-            >
-              {isFullscreen ? (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden
-                  >
-                    <path d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3" />
-                  </svg>
-                  <span className="fs-btn-label">Sair da tela cheia</span>
-                </>
-              ) : (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden
-                  >
-                    <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
-                  </svg>
-                  <span className="fs-btn-label">Tela cheia</span>
-                </>
-              )}
-            </FsButton>
-          </PanelActions>
-               </Panel>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  aria-hidden
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span className="fs-btn-label">Nova tabela</span>
+              </FsButton>
+              <FsButton
+                type="button"
+                onClick={toggleFullscreen}
+                title={
+                  isFullscreen
+                    ? 'Sair da tela cheia (Esc)'
+                    : 'Expandir canvas em tela cheia'
+                }
+                aria-label={
+                  isFullscreen
+                    ? 'Sair da tela cheia'
+                    : 'Expandir canvas em tela cheia'
+                }
+              >
+                {isFullscreen ? (
+                  <>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3" />
+                    </svg>
+                    <span className="fs-btn-label">Sair da tela cheia</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+                    </svg>
+                    <span className="fs-btn-label">Tela cheia</span>
+                  </>
+                )}
+              </FsButton>
+            </PanelActions>
+          </ModelingControlsStrip>
+        </Panel>
       </ReactFlow>
       <DatabaseImportModal
         open={importModalOpen}

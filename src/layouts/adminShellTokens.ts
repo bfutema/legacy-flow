@@ -10,3 +10,7 @@ export const ADMIN_HEADER_BAR_HEIGHT = 'calc(0.75rem + 2.5rem + 0.75rem + 1px)'
  * ao menu e aos ícones da direita.
  */
 export const ADMIN_CONTENT_GUTTER_X = 'clamp(1rem, 3vw, 2rem)'
+
+/** Viewport em que o sidebar vira gaveta (menu hambúrguer). */
+export const ADMIN_MOBILE_MAX_PX = 767
+export const ADMIN_MOBILE_MEDIA = `(max-width: ${ADMIN_MOBILE_MAX_PX}px)`

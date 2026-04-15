@@ -1,4 +1,5 @@
 import styled, { css, keyframes } from 'styled-components'
+import { ADMIN_MOBILE_MEDIA } from '../layouts/adminShellTokens'
 
 /** Só opacity — evita `transform` no ancestral do Kanban (quebra o DragOverlay do @dnd-kit). */
 const fadeIn = keyframes`
@@ -30,6 +31,10 @@ export const TopStrip = styled.div`
   padding: 1rem 1.25rem 0.75rem;
   border-bottom: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme }) => theme.bg};
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    padding: 0.65rem 0.85rem 0.55rem;
+  }
 `
 
 export const PageTitle = styled.h1`
@@ -39,6 +44,11 @@ export const PageTitle = styled.h1`
   color: ${({ theme }) => theme.text};
   animation: ${fadeIn} 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   ${reduceMotion}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 1.12rem;
+    margin-bottom: 0.25rem;
+  }
 `
 
 export const Lead = styled.p`
@@ -49,6 +59,12 @@ export const Lead = styled.p`
   line-height: 1.5;
   animation: ${fadeIn} 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
   ${reduceMotion}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    max-width: none;
+  }
 `
 
 export const BoardFill = styled.div`
@@ -58,4 +74,8 @@ export const BoardFill = styled.div`
   flex-direction: column;
   animation: ${fadeIn} 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
   ${reduceMotion}
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    min-height: clamp(220px, calc(100dvh - 10.5rem), 75dvh);
+  }
 `

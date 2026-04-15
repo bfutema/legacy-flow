@@ -70,58 +70,133 @@ const iconOrganogram = (
 
 type Props = {
   collapsed: boolean
+  /** Em telas estreitas: sidebar vira gaveta controlada por `mobileOpen`. */
+  mobileDrawer?: boolean
+  mobileOpen?: boolean
+  onNavigate?: () => void
 }
 
-export function Sidebar({ collapsed }: Props) {
+export function Sidebar({
+  collapsed,
+  mobileDrawer = false,
+  mobileOpen = false,
+  onNavigate,
+}: Props) {
+  const showLabels = mobileDrawer || !collapsed
+  const closeIfDrawer = () => {
+    if (mobileDrawer) onNavigate?.()
+  }
+
   return (
-    <Aside $collapsed={collapsed} aria-label="Menu principal">
-      <Brand $collapsed={collapsed} aria-label={collapsed ? 'Flow Admin' : undefined}>
+    <Aside
+      id={mobileDrawer ? 'admin-mobile-nav' : undefined}
+      $collapsed={collapsed}
+      $mobileDrawer={mobileDrawer}
+      $mobileOpen={mobileOpen}
+      aria-label="Menu principal"
+      aria-hidden={mobileDrawer && !mobileOpen ? true : undefined}
+    >
+      <Brand
+        $collapsed={collapsed}
+        $mobileDrawer={mobileDrawer}
+        aria-label={!showLabels ? 'Flow Admin' : undefined}
+      >
         <MarkWrap>
-          <FlowMark size={collapsed ? 24 : 28} />
+          <FlowMark size={showLabels ? 28 : 24} />
         </MarkWrap>
-        {!collapsed ? <BrandLabel>Flow Admin</BrandLabel> : null}
+        {showLabels ? <BrandLabel>Flow Admin</BrandLabel> : null}
       </Brand>
-      <NavScroll $collapsed={collapsed}>
+      <NavScroll $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
         <Can I="read" a="Dashboard">
-          <SidebarLink $collapsed={collapsed} to="/" end>
+          <SidebarLink
+            $collapsed={collapsed}
+            $mobileDrawer={mobileDrawer}
+            to="/"
+            end
+            onClick={closeIfDrawer}
+          >
             <NavIcon>{iconDashboard}</NavIcon>
-            <NavLabel $collapsed={collapsed}>Dashboard</NavLabel>
+            <NavLabel $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
+              Dashboard
+            </NavLabel>
           </SidebarLink>
         </Can>
         <Can I="read" a="Project">
-          <SidebarLink $collapsed={collapsed} to="/projects">
+          <SidebarLink
+            $collapsed={collapsed}
+            $mobileDrawer={mobileDrawer}
+            to="/projects"
+            onClick={closeIfDrawer}
+          >
             <NavIcon>{iconProjetos}</NavIcon>
-            <NavLabel $collapsed={collapsed}>Projetos</NavLabel>
+            <NavLabel $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
+              Projetos
+            </NavLabel>
           </SidebarLink>
         </Can>
         <Can I="read" a="User">
-          <SidebarLink $collapsed={collapsed} to="/users">
+          <SidebarLink
+            $collapsed={collapsed}
+            $mobileDrawer={mobileDrawer}
+            to="/users"
+            onClick={closeIfDrawer}
+          >
             <NavIcon>{iconUsuarios}</NavIcon>
-            <NavLabel $collapsed={collapsed}>Usuários</NavLabel>
+            <NavLabel $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
+              Usuários
+            </NavLabel>
           </SidebarLink>
         </Can>
         <Can I="read" a="Timeline">
-          <SidebarLink $collapsed={collapsed} to="/allocations">
+          <SidebarLink
+            $collapsed={collapsed}
+            $mobileDrawer={mobileDrawer}
+            to="/allocations"
+            onClick={closeIfDrawer}
+          >
             <NavIcon>{iconAlocacoes}</NavIcon>
-            <NavLabel $collapsed={collapsed}>Timeline</NavLabel>
+            <NavLabel $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
+              Timeline
+            </NavLabel>
           </SidebarLink>
         </Can>
         <Can I="read" a="TaskBoard">
-          <SidebarLink $collapsed={collapsed} to="/tasks">
+          <SidebarLink
+            $collapsed={collapsed}
+            $mobileDrawer={mobileDrawer}
+            to="/tasks"
+            onClick={closeIfDrawer}
+          >
             <NavIcon>{iconKanban}</NavIcon>
-            <NavLabel $collapsed={collapsed}>Tarefas</NavLabel>
+            <NavLabel $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
+              Tarefas
+            </NavLabel>
           </SidebarLink>
         </Can>
         <Can I="read" a="Report">
-          <SidebarLink $collapsed={collapsed} to="/reports">
+          <SidebarLink
+            $collapsed={collapsed}
+            $mobileDrawer={mobileDrawer}
+            to="/reports"
+            onClick={closeIfDrawer}
+          >
             <NavIcon>{iconRel}</NavIcon>
-            <NavLabel $collapsed={collapsed}>Relatórios</NavLabel>
+            <NavLabel $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
+              Relatórios
+            </NavLabel>
           </SidebarLink>
         </Can>
         <Can I="manage" a="Security">
-          <SidebarLink $collapsed={collapsed} to="/access-control">
+          <SidebarLink
+            $collapsed={collapsed}
+            $mobileDrawer={mobileDrawer}
+            to="/access-control"
+            onClick={closeIfDrawer}
+          >
             <NavIcon>{iconAccess}</NavIcon>
-            <NavLabel $collapsed={collapsed}>Acesso</NavLabel>
+            <NavLabel $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
+              Acesso
+            </NavLabel>
           </SidebarLink>
         </Can>
         {/* Organograma: rota /organogram ainda existe; descomente ícone + link no topo do arquivo.
@@ -132,7 +207,9 @@ export function Sidebar({ collapsed }: Props) {
         */}
       </NavScroll>
       <Footer>
-        <FooterText $collapsed={collapsed}>v0.1 · template</FooterText>
+        <FooterText $collapsed={collapsed} $mobileDrawer={mobileDrawer}>
+          v0.1 · template
+        </FooterText>
       </Footer>
     </Aside>
   )
