@@ -455,6 +455,51 @@ export const HashPrefix = styled.span`
   flex-shrink: 0;
 `
 
+export const FooterBar = styled.div`
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0 0 ${NODE_RADIUS} ${NODE_RADIUS};
+  overflow: hidden;
+`
+
+export const FooterAction = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0.4rem 0.35rem;
+  margin: 0;
+  border: none;
+  border-right: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.6875rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover {
+    color: ${({ theme }) => theme.text};
+    background: ${({ theme }) => theme.surfaceHover};
+  }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    font-size: 0.625rem;
+    padding: 0.4rem 0.25rem;
+  }
+`
+
+/** Rodapé com uma única ação (legado / uso isolado). */
 export const Footer = styled.button`
   display: flex;
   align-items: center;

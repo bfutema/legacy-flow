@@ -348,6 +348,51 @@ export const FsButton = styled.button`
   }
 `
 
+/** Igual ao `FsButton`, mas com destaque na cor do projeto quando há revisão pendente. */
+export const RevisionSaveButton = styled(FsButton)<{
+  $pending: boolean
+  $projectPrimary: string
+}>`
+  ${({ $pending, $projectPrimary, theme }) =>
+    $pending
+      ? css`
+          background: ${$projectPrimary};
+          color: #fff;
+          border-color: color-mix(in srgb, ${$projectPrimary} 70%, ${theme.border});
+
+          & > svg {
+            color: #fff;
+          }
+
+          .fs-btn-label {
+            color: #fff;
+          }
+
+          &:hover,
+          &:focus-visible {
+            background: color-mix(in srgb, ${$projectPrimary} 85%, #fff);
+            border-color: ${$projectPrimary};
+            color: #fff;
+
+            & > svg {
+              color: #fff;
+            }
+
+            .fs-btn-label {
+              color: #fff;
+            }
+          }
+
+          @media ${ADMIN_MOBILE_MEDIA} {
+            &:hover,
+            &:focus-visible {
+              background: color-mix(in srgb, ${$projectPrimary} 85%, #fff);
+            }
+          }
+        `
+      : undefined}
+`
+
 export const SchemaFilterWrap = styled.label`
   display: flex;
   flex-direction: column;
@@ -502,6 +547,12 @@ export const HistoryHint = styled.p`
   line-height: 1.35;
 `
 
+export const RevisionFeedback = styled.div`
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.primary};
+  line-height: 1.35;
+`
+
 export const HistoryList = styled.ul`
   list-style: none;
   margin: 0;
@@ -540,6 +591,20 @@ export const HistoryEntryDetail = styled.span`
 export const HistoryEntryTime = styled.time`
   font-size: 0.66rem;
   color: ${({ theme }) => theme.textMuted};
+`
+
+export const RevisionChanges = styled.ul`
+  margin: 0.2rem 0 0;
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+`
+
+export const RevisionChangeItem = styled.li`
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.textMuted};
+  line-height: 1.35;
 `
 
 export const HistoryEmpty = styled.div`

@@ -44,11 +44,20 @@ import {
 } from '../persistence/modelingFlowStorage'
 import {
   appendModelingHistory,
+  clearModelingHistory,
   getModelingHistoryChangedEventName,
   loadModelingHistory,
   type ModelingHistoryEntry,
 } from '../persistence/modelingHistoryStorage'
-import { HiOutlineClock } from 'react-icons/hi2'
+import {
+  clearModelingRevisions,
+  createModelingRevision,
+  getModelingRevisionsChangedEventName,
+  hasPendingRevisionChanges,
+  loadModelingRevisions,
+  type ModelingRevision,
+} from '../persistence/modelingRevisionsStorage'
+import { HiOutlineClock, HiOutlineTrash } from 'react-icons/hi2'
 import {
   initialDbEdges,
   initialDbNodes,
@@ -71,6 +80,10 @@ import {
   HistoryList,
   HistoryPanel,
   HistoryPanelToggle,
+  RevisionChangeItem,
+  RevisionChanges,
+  RevisionFeedback,
+  RevisionSaveButton,
   CardinalityField,
   CardinalityFieldLabel,
   CardinalityPanel,
@@ -109,7 +122,7 @@ function namespaceLabelByEngine(engine: string): string {
   return 'Schema'
 }
 
-type HistoryScope = 'applied' | 'timeline'
+type HistoryScope = 'applied' | 'timeline' | 'revisions'
 
 type CurrentStateItem = {
   id: string
@@ -148,6 +161,8 @@ function DatabaseFlowCanvas({
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyScope, setHistoryScope] = useState<HistoryScope>('applied')
   const [historyEntries, setHistoryEntries] = useState<ModelingHistoryEntry[]>([])
+  const [revisions, setRevisions] = useState<ModelingRevision[]>([])
+  const [revisionFeedback, setRevisionFeedback] = useState('')
 
   const initialFlow = useMemo(() => {
     const saved = loadModelingFlow(projectId)
@@ -260,6 +275,19 @@ function DatabaseFlowCanvas({
       refresh()
     }
     const eventName = getModelingHistoryChangedEventName()
+    window.addEventListener(eventName, onChanged)
+    return () => window.removeEventListener(eventName, onChanged)
+  }, [projectId])
+
+  useEffect(() => {
+    const refresh = () => setRevisions(loadModelingRevisions(projectId))
+    refresh()
+    const onChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ projectId?: string }>).detail
+      if (detail?.projectId && detail.projectId !== projectId) return
+      refresh()
+    }
+    const eventName = getModelingRevisionsChangedEventName()
     window.addEventListener(eventName, onChanged)
     return () => window.removeEventListener(eventName, onChanged)
   }, [projectId])
@@ -477,6 +505,11 @@ function DatabaseFlowCanvas({
     [historyEntries],
   )
 
+  const hasPendingRevision = useMemo(
+    () => hasPendingRevisionChanges(projectId, nodes),
+    [projectId, nodes, revisions],
+  )
+
   const currentStateItems = useMemo<CurrentStateItem[]>(() => {
     const tables = nodes
       .filter((n) => n.type === 'table')
@@ -513,6 +546,38 @@ function DatabaseFlowCanvas({
     }
     return items
   }, [nodes])
+
+  const saveRevision = useCallback(() => {
+    const result = createModelingRevision(projectId, nodes)
+    if (!result.created) {
+      setRevisionFeedback('Sem mudanças desde a última revisão salva.')
+      return
+    }
+    setRevisionFeedback(`Revisão r${result.revision.number} salva com sucesso.`)
+    setHistoryOpen(true)
+    setHistoryScope('revisions')
+  }, [nodes, projectId])
+
+  const clearEntireModel = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Limpar toda a modelagem',
+      message:
+        'Isso apaga todas as tabelas e relações do diagrama, o histórico de eventos e todas as revisões salvas deste projeto neste navegador. O canvas ficará vazio. Esta ação não pode ser desfeita.',
+      confirmLabel: 'Limpar tudo',
+      cancelLabel: 'Cancelar',
+    })
+    if (!ok) return
+    clearModelingHistory(projectId)
+    clearModelingRevisions(projectId)
+    setNodes([])
+    setEdges([])
+    setSelectedRelEdgeId(null)
+    setSchemaFilter(ALL_SCHEMAS_FILTER)
+    setRevisionFeedback('')
+    setHistoryEntries([])
+    setRevisions([])
+    saveModelingFlow(projectId, [], [])
+  }, [confirm, projectId, setEdges, setNodes])
 
   return (
     <FlowHost ref={hostRef}>
@@ -719,6 +784,39 @@ function DatabaseFlowCanvas({
                 <HiOutlineClock aria-hidden />
                 <span className="fs-btn-label">Histórico</span>
               </FsButton>
+              <RevisionSaveButton
+                type="button"
+                onClick={saveRevision}
+                title="Salvar revisão da modelagem"
+                aria-label="Salvar revisão da modelagem"
+                $pending={hasPendingRevision}
+                $projectPrimary={projectPrimaryColor}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                  <path d="M17 21v-8H7v8M7 3v5h8" />
+                </svg>
+                <span className="fs-btn-label">Salvar revisão</span>
+              </RevisionSaveButton>
+              <FsButton
+                type="button"
+                onClick={() => void clearEntireModel()}
+                title="Limpar diagrama, histórico e revisões (irreversível)"
+                aria-label="Limpar toda a modelagem, histórico e revisões"
+              >
+                <HiOutlineTrash aria-hidden />
+                <span className="fs-btn-label">Limpar tudo</span>
+              </FsButton>
             </PanelActions>
           </ModelingControlsStrip>
         </Panel>
@@ -741,12 +839,16 @@ function DatabaseFlowCanvas({
                 >
                   <option value="applied">Estado atual</option>
                   <option value="timeline">Linha do tempo</option>
+                  <option value="revisions">Revisões</option>
                 </HistoryFilterSelect>
               </HistoryHeader>
+              {revisionFeedback ? <RevisionFeedback>{revisionFeedback}</RevisionFeedback> : null}
               <HistoryHint>
                 {historyScope === 'applied'
                   ? 'Mostra somente o estado atual aplicado no modelo.'
-                  : 'Mostra o histórico de mudanças em ordem cronológica.'}
+                  : historyScope === 'timeline'
+                    ? 'Mostra o histórico de mudanças em ordem cronológica.'
+                    : 'Revisões manuais salvas por você (estilo migrations).'}
               </HistoryHint>
               {historyScope === 'applied' ? (
                 currentStateItems.length > 0 ? (
@@ -763,21 +865,49 @@ function DatabaseFlowCanvas({
                     Ainda não há tabelas/campos no modelo.
                   </HistoryEmpty>
                 )
-              ) : historyTimeline.length > 0 ? (
+              ) : historyScope === 'timeline' ? (
+                historyTimeline.length > 0 ? (
+                  <HistoryList id="modeling-history-list">
+                    {historyTimeline.map((entry) => (
+                      <HistoryItem key={entry.id}>
+                        <HistoryEntryTitle>{entry.label}</HistoryEntryTitle>
+                        {entry.details ? (
+                          <HistoryEntryDetail>{entry.details}</HistoryEntryDetail>
+                        ) : null}
+                        <HistoryEntryTime>{formatHistoryWhen(entry.atIso)}</HistoryEntryTime>
+                      </HistoryItem>
+                    ))}
+                  </HistoryList>
+                ) : (
+                  <HistoryEmpty id="modeling-history-list">
+                    Nenhuma mudança registrada ainda.
+                  </HistoryEmpty>
+                )
+              ) : revisions.length > 0 ? (
                 <HistoryList id="modeling-history-list">
-                  {historyTimeline.map((entry) => (
-                    <HistoryItem key={entry.id}>
-                      <HistoryEntryTitle>{entry.label}</HistoryEntryTitle>
-                      {entry.details ? (
-                        <HistoryEntryDetail>{entry.details}</HistoryEntryDetail>
-                      ) : null}
-                      <HistoryEntryTime>{formatHistoryWhen(entry.atIso)}</HistoryEntryTime>
+                  {revisions.map((revision) => (
+                    <HistoryItem key={revision.id}>
+                      <HistoryEntryTitle>
+                        Revisão r{revision.number}
+                      </HistoryEntryTitle>
+                      <HistoryEntryTime>{formatHistoryWhen(revision.createdAtIso)}</HistoryEntryTime>
+                      {revision.changes.length > 0 ? (
+                        <RevisionChanges>
+                          {revision.changes.map((change, index) => (
+                            <RevisionChangeItem key={`${revision.id}_${index}`}>
+                              {change}
+                            </RevisionChangeItem>
+                          ))}
+                        </RevisionChanges>
+                      ) : (
+                        <HistoryEntryDetail>Sem mudanças detectadas.</HistoryEntryDetail>
+                      )}
                     </HistoryItem>
                   ))}
                 </HistoryList>
               ) : (
                 <HistoryEmpty id="modeling-history-list">
-                  Nenhuma mudança registrada ainda.
+                  Nenhuma revisão salva ainda.
                 </HistoryEmpty>
               )}
             </HistoryPanel>

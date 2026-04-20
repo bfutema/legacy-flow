@@ -15,6 +15,7 @@ import { useModelingDatabase } from '../contexts/ModelingDatabaseContext'
 import type { PrimaryDatabaseType } from '../data/databaseEngines'
 import { appendModelingHistory } from '../persistence/modelingHistoryStorage'
 import { suggestedTypesForEngine } from '../data/sqlColumnTypes'
+import { auditControlFieldTemplates } from './auditFields'
 import { FieldConstraintsPanel } from './FieldConstraintsPanel'
 import {
   Body,
@@ -27,7 +28,8 @@ import {
   FieldType,
   FieldTypeColumn,
   FieldTypeInput,
-  Footer,
+  FooterAction,
+  FooterBar,
   HashPrefix,
   Header,
   HeaderActions,
@@ -743,6 +745,45 @@ export const TableNode = memo(function TableNode({
     }
   }, [id, fields, setNodes, projectId, schemaName, tableName])
 
+  const addAuditControlFields = useCallback(() => {
+    const existing = new Set(
+      fields.map((f) => f.name.trim().toLowerCase()).filter(Boolean),
+    )
+    const templates = auditControlFieldTemplates(engine)
+    const toAdd: TableField[] = []
+    for (const t of templates) {
+      if (existing.has(t.name.toLowerCase())) continue
+      const newKey = `f_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`
+      toAdd.push({ ...t, key: newKey })
+    }
+    if (toAdd.length === 0) return
+
+    setNodes((nodes) =>
+      nodes.map((node) => {
+        if (node.id !== id || node.type !== 'table') return node
+        const prev = node.data as TableNodeData
+        return {
+          ...node,
+          data: {
+            ...prev,
+            fields: [...prev.fields, ...toAdd],
+          },
+        }
+      }),
+    )
+
+    if (projectId) {
+      for (const f of toAdd) {
+        appendModelingHistory(projectId, {
+          action: 'field_created',
+          entityKey: `field:${id}:${f.key}`,
+          label: `Campo criado: "${f.name}"`,
+          details: `Tabela: ${schemaName ? `${schemaName}.` : ''}${tableName}`,
+        })
+      }
+    }
+  }, [engine, fields, id, projectId, schemaName, setNodes, tableName])
+
   const removeTable = useCallback(async () => {
     const full = schemaName ? `${schemaName}.${tableName}` : tableName
     const ok = await confirm({
@@ -891,24 +932,47 @@ export const TableNode = memo(function TableNode({
           )
         })}
       </Body>
-      <Footer
-        type="button"
-        className="nodrag nopan"
-        onClick={(e) => {
-          e.stopPropagation()
-          addField()
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path
-            d="M12 5v14M5 12h14"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-        Novo campo
-      </Footer>
+      <FooterBar>
+        <FooterAction
+          type="button"
+          className="nodrag nopan"
+          title="Adiciona created_at, updated_at e deleted_at (somente os que ainda não existem), com tipo e DEFAULT conforme o motor SQL do projeto."
+          aria-label="Adicionar campos de controle: created_at, updated_at e deleted_at"
+          onClick={(e) => {
+            e.stopPropagation()
+            addAuditControlFields()
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Controle
+        </FooterAction>
+        <FooterAction
+          type="button"
+          className="nodrag nopan"
+          onClick={(e) => {
+            e.stopPropagation()
+            addField()
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M12 5v14M5 12h14"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          Novo campo
+        </FooterAction>
+      </FooterBar>
     </Root>
   )
 })

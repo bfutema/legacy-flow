@@ -60,6 +60,15 @@ export function loadModelingHistory(projectId: string): ModelingHistoryEntry[] {
   }
 }
 
+export function clearModelingHistory(projectId: string): void {
+  try {
+    localStorage.removeItem(modelingHistoryStorageKey(projectId))
+    emitModelingHistoryChanged(projectId)
+  } catch (err) {
+    console.warn('[modelagem] Não foi possível limpar o histórico:', err)
+  }
+}
+
 export function appendModelingHistory(
   projectId: string,
   entry: Omit<ModelingHistoryEntry, 'id' | 'atIso'>,
