@@ -17,6 +17,7 @@ export type TableField = {
 }
 
 export type TableNodeData = {
+  projectId?: string
   /** Namespace lógico da tabela (schema no PostgreSQL/SQL Server; database no MySQL). */
   schemaName?: string
   tableName: string

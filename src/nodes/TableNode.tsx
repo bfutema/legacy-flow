@@ -13,11 +13,13 @@ import { Handle, Position, useReactFlow, type Node, type NodeProps } from '@xyfl
 import { useConfirmDialog } from '../contexts/ConfirmDialogContext'
 import { useModelingDatabase } from '../contexts/ModelingDatabaseContext'
 import type { PrimaryDatabaseType } from '../data/databaseEngines'
+import { appendModelingHistory } from '../persistence/modelingHistoryStorage'
 import { suggestedTypesForEngine } from '../data/sqlColumnTypes'
 import { FieldConstraintsPanel } from './FieldConstraintsPanel'
 import {
   Body,
   DeleteFieldButton,
+  DeleteTableButton,
   ReorderFieldButton,
   ReorderGroup,
   FieldName,
@@ -28,7 +30,9 @@ import {
   Footer,
   HashPrefix,
   Header,
+  HeaderActions,
   HeaderTitleText,
+  HeaderTitleWrap,
   Icons,
   ROW_HEIGHT_PX,
   Root,
@@ -445,6 +449,7 @@ export const TableNode = memo(function TableNode({
     [engine],
   )
   const { tableName, fields } = data
+  const projectId = data.projectId?.trim()
   const schemaName = data.schemaName?.trim() ?? ''
 
   const [editingTitle, setEditingTitle] = useState(false)
@@ -463,6 +468,8 @@ export const TableNode = memo(function TableNode({
   }, [editingTitle])
 
   const commitTableName = useCallback(() => {
+    const prevTableName = tableName
+    const prevSchemaName = schemaName
     const parsed = parseTableIdentifier(titleDraft, schemaName)
     setNodes((nodes) =>
       nodes.map((node) => {
@@ -479,7 +486,21 @@ export const TableNode = memo(function TableNode({
       }),
     )
     setEditingTitle(false)
-  }, [id, titleDraft, schemaName, setNodes])
+    const prevFull = prevSchemaName
+      ? `${prevSchemaName}.${prevTableName}`
+      : prevTableName
+    const nextFull = parsed.schemaName
+      ? `${parsed.schemaName}.${parsed.tableName}`
+      : parsed.tableName
+    if (projectId && prevFull !== nextFull) {
+      appendModelingHistory(projectId, {
+        action: 'table_renamed',
+        entityKey: `table:${id}`,
+        label: `Tabela renomeada para "${nextFull}"`,
+        details: `Antes: ${prevFull}`,
+      })
+    }
+  }, [id, titleDraft, schemaName, setNodes, tableName, projectId])
 
   const cancelTableName = useCallback(() => {
     setTitleDraft(schemaName ? `${schemaName}.${tableName}` : tableName)
@@ -552,13 +573,23 @@ export const TableNode = memo(function TableNode({
         }
       }),
     )
+    const previous = fields.find((x) => x.key === fieldKey)
+    if (projectId && previous && previous.name !== next) {
+      appendModelingHistory(projectId, {
+        action: 'field_renamed',
+        entityKey: `field:${id}:${fieldKey}`,
+        label: `Campo "${previous.name}" renomeado para "${next}"`,
+        details: `Tabela: ${schemaName ? `${schemaName}.` : ''}${tableName}`,
+      })
+    }
     setFieldEdit(null)
-  }, [fieldEdit, fieldDraft, fields, id, setNodes])
+  }, [fieldEdit, fieldDraft, fields, id, setNodes, projectId, schemaName, tableName])
 
   const commitFieldType = useCallback(() => {
     if (!fieldEdit || fieldEdit.part !== 'type') return
     const fieldKey = fieldEdit.key
     const next = normalizeFieldType(fieldDraft)
+    const previous = fields.find((x) => x.key === fieldKey)
     setNodes((nodes) =>
       nodes.map((node) => {
         if (node.id !== id || node.type !== 'table') return node
@@ -574,8 +605,16 @@ export const TableNode = memo(function TableNode({
         }
       }),
     )
+    if (projectId && previous && previous.type !== next) {
+      appendModelingHistory(projectId, {
+        action: 'field_type_changed',
+        entityKey: `field:${id}:${fieldKey}`,
+        label: `Tipo do campo "${previous.name}" alterado para "${next}"`,
+        details: `Antes: ${previous.type}`,
+      })
+    }
     setFieldEdit(null)
-  }, [fieldEdit, fieldDraft, id, setNodes])
+  }, [fieldEdit, fieldDraft, id, setNodes, fields, projectId])
 
   const onFieldNameKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
@@ -631,6 +670,7 @@ export const TableNode = memo(function TableNode({
   const removeField = useCallback(
     (fieldKey: string) => {
       if (fields.length <= 1) return
+      const removedField = fields.find((f) => f.key === fieldKey)
 
       setFieldEdit((cur) => (cur?.key === fieldKey ? null : cur))
       setConstraintsKey((cur) => (cur === fieldKey ? null : cur))
@@ -658,8 +698,16 @@ export const TableNode = memo(function TableNode({
           }
         }),
       )
+      if (projectId && removedField) {
+        appendModelingHistory(projectId, {
+          action: 'field_deleted',
+          entityKey: `field:${id}:${fieldKey}`,
+          label: `Campo removido: "${removedField.name}"`,
+          details: `Tabela: ${schemaName ? `${schemaName}.` : ''}${tableName}`,
+        })
+      }
     },
-    [fields.length, id, setNodes, setEdges],
+    [fields, id, setNodes, setEdges, projectId, schemaName, tableName],
   )
 
   const addField = useCallback(() => {
@@ -685,7 +733,37 @@ export const TableNode = memo(function TableNode({
         }
       }),
     )
-  }, [id, fields, setNodes])
+    if (projectId) {
+      appendModelingHistory(projectId, {
+        action: 'field_created',
+        entityKey: `field:${id}:${newKey}`,
+        label: `Campo criado: "${newField.name}"`,
+        details: `Tabela: ${schemaName ? `${schemaName}.` : ''}${tableName}`,
+      })
+    }
+  }, [id, fields, setNodes, projectId, schemaName, tableName])
+
+  const removeTable = useCallback(async () => {
+    const full = schemaName ? `${schemaName}.${tableName}` : tableName
+    const ok = await confirm({
+      title: 'Excluir tabela',
+      message: `A tabela "${full}" será excluída. As relações ligadas a ela serão removidas.`,
+      confirmLabel: 'Excluir',
+      cancelLabel: 'Cancelar',
+    })
+    if (!ok) return
+    setEdges((edges) =>
+      edges.filter((e) => e.source !== id && e.target !== id),
+    )
+    setNodes((nodes) => nodes.filter((node) => node.id !== id))
+    if (projectId) {
+      appendModelingHistory(projectId, {
+        action: 'table_deleted',
+        entityKey: `table:${id}`,
+        label: `Tabela removida: "${full}"`,
+      })
+    }
+  }, [confirm, id, projectId, schemaName, setEdges, setNodes, tableName])
 
   return (
     <Root $selected={selected} $accent={accent}>
@@ -695,31 +773,54 @@ export const TableNode = memo(function TableNode({
         onDoubleClick={startEditTitle}
         title="Duplo clique para editar o nome da tabela"
       >
-        {editingTitle ? (
-          <TitleInput
-            ref={titleInputRef}
-            className="nodrag nopan"
-            value={titleDraft}
-            onChange={(e) => setTitleDraft(e.target.value)}
-            onBlur={commitTableName}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commitTableName()
-              }
-              if (e.key === 'Escape') {
-                e.preventDefault()
-                cancelTableName()
-              }
+        <HeaderTitleWrap>
+          {editingTitle ? (
+            <TitleInput
+              ref={titleInputRef}
+              className="nodrag nopan"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={commitTableName}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  commitTableName()
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault()
+                  cancelTableName()
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Nome da tabela"
+            />
+          ) : (
+            <HeaderTitleText>
+              {schemaName ? `${schemaName}.${tableName}` : tableName}
+            </HeaderTitleText>
+          )}
+        </HeaderTitleWrap>
+        <HeaderActions className="nodrag nopan">
+          <DeleteTableButton
+            type="button"
+            title="Excluir tabela"
+            aria-label={`Excluir tabela ${schemaName ? `${schemaName}.` : ''}${tableName}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              void removeTable()
             }}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Nome da tabela"
-          />
-        ) : (
-          <HeaderTitleText>
-            {schemaName ? `${schemaName}.${tableName}` : tableName}
-          </HeaderTitleText>
-        )}
+          >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </DeleteTableButton>
+        </HeaderActions>
       </Header>
       <Body>
         {fields.map((f, i) => {

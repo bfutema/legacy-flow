@@ -43,6 +43,13 @@ import {
   saveModelingFlow,
 } from '../persistence/modelingFlowStorage'
 import {
+  appendModelingHistory,
+  getModelingHistoryChangedEventName,
+  loadModelingHistory,
+  type ModelingHistoryEntry,
+} from '../persistence/modelingHistoryStorage'
+import { HiOutlineClock } from 'react-icons/hi2'
+import {
   initialDbEdges,
   initialDbNodes,
   TABLE_NODE_DRAG_HANDLE,
@@ -53,6 +60,17 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { ADMIN_MOBILE_MEDIA } from '../layouts/adminShellTokens'
 import {
   BackLink,
+  HistoryEmpty,
+  HistoryEntryDetail,
+  HistoryEntryTime,
+  HistoryEntryTitle,
+  HistoryFilterSelect,
+  HistoryHeader,
+  HistoryHint,
+  HistoryItem,
+  HistoryList,
+  HistoryPanel,
+  HistoryPanelToggle,
   CardinalityField,
   CardinalityFieldLabel,
   CardinalityPanel,
@@ -91,6 +109,26 @@ function namespaceLabelByEngine(engine: string): string {
   return 'Schema'
 }
 
+type HistoryScope = 'applied' | 'timeline'
+
+type CurrentStateItem = {
+  id: string
+  title: string
+  details: string
+}
+
+function formatHistoryWhen(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(d)
+  } catch {
+    return iso
+  }
+}
+
 function DatabaseFlowCanvas({
   projectId,
   projectPrimaryColor,
@@ -107,6 +145,9 @@ function DatabaseFlowCanvas({
   const flowInstanceRef = useRef<ReactFlowInstance | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [importModalOpen, setImportModalOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyScope, setHistoryScope] = useState<HistoryScope>('applied')
+  const [historyEntries, setHistoryEntries] = useState<ModelingHistoryEntry[]>([])
 
   const initialFlow = useMemo(() => {
     const saved = loadModelingFlow(projectId)
@@ -136,6 +177,17 @@ function DatabaseFlowCanvas({
       }),
     )
   }, [projectPrimaryColor, setNodes])
+
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.type !== 'table') return n
+        const d = n.data as TableNodeData
+        if (d.projectId === projectId) return n
+        return { ...n, data: { ...d, projectId } }
+      }),
+    )
+  }, [projectId, setNodes])
 
   /** Diagramas antigos no localStorage sem `dragHandle` — alinhar com cabeçalho como única alça */
   useEffect(() => {
@@ -198,6 +250,19 @@ function DatabaseFlowCanvas({
     }, PERSIST_DEBOUNCE_MS)
     return () => window.clearTimeout(t)
   }, [projectId, nodes, edges])
+
+  useEffect(() => {
+    const refresh = () => setHistoryEntries(loadModelingHistory(projectId))
+    refresh()
+    const onChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ projectId?: string }>).detail
+      if (detail?.projectId && detail.projectId !== projectId) return
+      refresh()
+    }
+    const eventName = getModelingHistoryChangedEventName()
+    window.addEventListener(eventName, onChanged)
+    return () => window.removeEventListener(eventName, onChanged)
+  }, [projectId])
 
   const toggleFullscreen = useCallback(() => {
     const el = hostRef.current
@@ -294,14 +359,27 @@ function DatabaseFlowCanvas({
           ? `A tabela "${names[0]}" será excluída. As relações ligadas a ela serão removidas.`
           : `${tables.length} tabelas serão excluídas (${names.join(', ')}). As relações ligadas serão removidas.`
 
-      return confirm({
+      const ok = await confirm({
         title: tables.length === 1 ? 'Excluir tabela' : 'Excluir tabelas',
         message,
         confirmLabel: 'Excluir',
         cancelLabel: 'Cancelar',
       })
+      if (!ok) return false
+      for (const table of tables) {
+        const td = table.data as TableNodeData
+        const full = td.schemaName?.trim()
+          ? `${td.schemaName.trim()}.${td.tableName}`
+          : td.tableName
+        appendModelingHistory(projectId, {
+          action: 'table_deleted',
+          entityKey: `table:${table.id}`,
+          label: `Tabela removida: "${full}"`,
+        })
+      }
+      return true
     },
-    [confirm],
+    [confirm, projectId],
   )
 
   const confirmReplaceDiagram = useCallback(
@@ -339,15 +417,21 @@ function DatabaseFlowCanvas({
           y: 40 + Math.floor(tableCount / 4) * 240,
         },
         data: {
+          projectId,
           schemaName: fallbackSchema,
           tableName: `tabela_${tableCount + 1}`,
           fields: [{ key: 'id', name: 'id', type: 'int8', pk: true }],
           primaryColor: projectPrimaryColor,
         },
       }
+      appendModelingHistory(projectId, {
+        action: 'table_created',
+        entityKey: `table:${node.id}`,
+        label: `Tabela criada: "${fallbackSchema}.${node.data.tableName}"`,
+      })
       return [...nds, node]
     })
-  }, [projectPrimaryColor, setNodes, sqlEngine])
+  }, [projectPrimaryColor, setNodes, sqlEngine, projectId])
 
   const colorMode = theme.mode === 'dark' ? 'dark' : 'light'
 
@@ -387,6 +471,48 @@ function DatabaseFlowCanvas({
       ),
     [edges, visibleNodeIds],
   )
+
+  const historyTimeline = useMemo(
+    () => [...historyEntries].reverse(),
+    [historyEntries],
+  )
+
+  const currentStateItems = useMemo<CurrentStateItem[]>(() => {
+    const tables = nodes
+      .filter((n) => n.type === 'table')
+      .map((n) => {
+        const d = n.data as TableNodeData
+        return {
+          nodeId: n.id,
+          schemaName: d.schemaName?.trim() ?? '',
+          tableName: d.tableName,
+          fields: d.fields,
+        }
+      })
+      .sort((a, b) =>
+        `${a.schemaName}.${a.tableName}`.localeCompare(
+          `${b.schemaName}.${b.tableName}`,
+        ),
+      )
+
+    const items: CurrentStateItem[] = []
+    for (const t of tables) {
+      const fullTable = t.schemaName ? `${t.schemaName}.${t.tableName}` : t.tableName
+      items.push({
+        id: `table:${t.nodeId}`,
+        title: `Tabela ativa: ${fullTable}`,
+        details: `${t.fields.length} campo(s)`,
+      })
+      for (const f of t.fields) {
+        items.push({
+          id: `field:${t.nodeId}:${f.key}`,
+          title: `Campo ativo: ${fullTable}.${f.name}`,
+          details: `Tipo: ${f.type}`,
+        })
+      }
+    }
+    return items
+  }, [nodes])
 
   return (
     <FlowHost ref={hostRef}>
@@ -582,9 +708,81 @@ function DatabaseFlowCanvas({
                   </>
                 )}
               </FsButton>
+              <FsButton
+                type="button"
+                onClick={() => setHistoryOpen((v) => !v)}
+                title={historyOpen ? 'Fechar histórico da modelagem' : 'Abrir histórico da modelagem'}
+                aria-label={historyOpen ? 'Fechar histórico da modelagem' : 'Abrir histórico da modelagem'}
+                aria-expanded={historyOpen}
+                aria-controls="modeling-history-list"
+              >
+                <HiOutlineClock aria-hidden />
+                <span className="fs-btn-label">Histórico</span>
+              </FsButton>
             </PanelActions>
           </ModelingControlsStrip>
         </Panel>
+        {historyOpen ? (
+          <Panel position="top-right" className="modeling-history-panel">
+            <HistoryPanel className="nodrag nopan">
+              <HistoryHeader>
+                <HistoryPanelToggle
+                  type="button"
+                  onClick={() => setHistoryOpen(false)}
+                  aria-expanded={historyOpen}
+                  aria-controls="modeling-history-list"
+                >
+                  Histórico da modelagem
+                </HistoryPanelToggle>
+                <HistoryFilterSelect
+                  value={historyScope}
+                  onChange={(e) => setHistoryScope(e.target.value as HistoryScope)}
+                  aria-label="Filtrar histórico da modelagem"
+                >
+                  <option value="applied">Estado atual</option>
+                  <option value="timeline">Linha do tempo</option>
+                </HistoryFilterSelect>
+              </HistoryHeader>
+              <HistoryHint>
+                {historyScope === 'applied'
+                  ? 'Mostra somente o estado atual aplicado no modelo.'
+                  : 'Mostra o histórico de mudanças em ordem cronológica.'}
+              </HistoryHint>
+              {historyScope === 'applied' ? (
+                currentStateItems.length > 0 ? (
+                  <HistoryList id="modeling-history-list">
+                    {currentStateItems.map((item) => (
+                      <HistoryItem key={item.id}>
+                        <HistoryEntryTitle>{item.title}</HistoryEntryTitle>
+                        <HistoryEntryDetail>{item.details}</HistoryEntryDetail>
+                      </HistoryItem>
+                    ))}
+                  </HistoryList>
+                ) : (
+                  <HistoryEmpty id="modeling-history-list">
+                    Ainda não há tabelas/campos no modelo.
+                  </HistoryEmpty>
+                )
+              ) : historyTimeline.length > 0 ? (
+                <HistoryList id="modeling-history-list">
+                  {historyTimeline.map((entry) => (
+                    <HistoryItem key={entry.id}>
+                      <HistoryEntryTitle>{entry.label}</HistoryEntryTitle>
+                      {entry.details ? (
+                        <HistoryEntryDetail>{entry.details}</HistoryEntryDetail>
+                      ) : null}
+                      <HistoryEntryTime>{formatHistoryWhen(entry.atIso)}</HistoryEntryTime>
+                    </HistoryItem>
+                  ))}
+                </HistoryList>
+              ) : (
+                <HistoryEmpty id="modeling-history-list">
+                  Nenhuma mudança registrada ainda.
+                </HistoryEmpty>
+              )}
+            </HistoryPanel>
+          </Panel>
+        ) : null}
       </ReactFlow>
       <DatabaseImportModal
         open={importModalOpen}

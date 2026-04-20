@@ -1,4 +1,5 @@
 import styled from 'styled-components'
+import { ADMIN_MOBILE_MEDIA } from '../layouts/adminShellTokens'
 
 /** Fallback legado (referência) */
 export const HEADER_BG = '#3b82f6'
@@ -44,12 +45,12 @@ export const Header = styled.div<{ $accent: string }>`
   max-height: ${HEADER_HEIGHT_PX}px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   box-sizing: border-box;
   background: ${({ $accent }) => $accent};
   color: #fff;
   text-align: center;
-  padding: 0 0.5rem;
+  padding: 0 0.4rem 0 0.5rem;
   font-weight: 600;
   font-size: 0.8125rem;
   letter-spacing: 0.02em;
@@ -62,6 +63,14 @@ export const Header = styled.div<{ $accent: string }>`
   }
 `
 
+export const HeaderTitleWrap = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`
+
 export const HeaderTitleText = styled.span`
   cursor: text;
   user-select: none;
@@ -69,6 +78,65 @@ export const HeaderTitleText = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+`
+
+export const HeaderActions = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  min-width: 1.5rem;
+`
+
+export const DeleteTableButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.28rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.14s ease,
+    background 0.14s ease,
+    color 0.14s ease;
+
+  ${Root}:hover &,
+  ${Root}:focus-within & {
+    opacity: 0.95;
+    pointer-events: auto;
+  }
+
+  &:hover {
+    background: rgba(248, 113, 113, 0.25);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+    outline: 2px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 1px;
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    opacity: 0.88;
+    pointer-events: auto;
+    width: 1.35rem;
+    height: 1.35rem;
+    background: rgba(255, 255, 255, 0.18);
+  }
 `
 
 export const TitleInput = styled.input`

@@ -52,7 +52,7 @@ export function ConfirmDialog({
           <CancelButton type="button" onClick={onCancel}>
             {cancelLabel}
           </CancelButton>
-          <ConfirmButton type="button" onClick={onConfirm}>
+          <ConfirmButton type="button" onClick={onConfirm} autoFocus>
             {confirmLabel}
           </ConfirmButton>
         </Actions>

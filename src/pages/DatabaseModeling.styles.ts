@@ -168,6 +168,13 @@ export const FlowHost = styled.div`
     }
   }
 
+  .react-flow__panel.modeling-history-panel {
+    top: 11.2rem;
+    right: 0.5rem;
+    max-width: none;
+    margin: 0;
+  }
+
   .react-flow__controls {
     @media (prefers-reduced-motion: no-preference) {
       animation: ${fadeUp} 0.45s ${easeOut} 0.32s both;
@@ -205,6 +212,11 @@ export const FlowHost = styled.div`
     .react-flow__controls {
       transform: scale(0.92);
       transform-origin: bottom left;
+    }
+
+    .react-flow__panel.modeling-history-panel {
+      top: 8.8rem;
+      right: 0.45rem;
     }
   }
 
@@ -426,6 +438,114 @@ export const ModelingControlsStrip = styled.div<{ $mobile: boolean }>`
             align-items: flex-end;
           }
         `}
+`
+
+export const HistoryPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: min(22rem, calc(100vw - 1rem));
+  max-width: min(24rem, calc(100vw - 1rem));
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.45rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  box-shadow: ${({ theme }) => theme.shadow};
+  align-items: stretch;
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    min-width: min(18rem, calc(100vw - 1rem));
+    max-width: min(20rem, calc(100vw - 1rem));
+    padding: 0.4rem 0.45rem;
+  }
+`
+
+export const HistoryHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+`
+
+export const HistoryPanelToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surfaceHover};
+  color: ${({ theme }) => theme.text};
+  border-radius: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.48rem;
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.primary};
+  }
+`
+
+export const HistoryFilterSelect = styled.select`
+  margin-left: auto;
+  font: inherit;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.28rem;
+  border-radius: 0.32rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+`
+
+export const HistoryHint = styled.p`
+  margin: 0;
+  font-size: 0.66rem;
+  color: ${({ theme }) => theme.textMuted};
+  line-height: 1.35;
+`
+
+export const HistoryList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: min(18rem, calc(100dvh - 14rem));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+`
+
+export const HistoryItem = styled.li`
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) =>
+    theme.mode === 'dark' ? 'rgba(30, 41, 59, 0.58)' : theme.surfaceHover};
+`
+
+export const HistoryEntryTitle = styled.strong`
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+  line-height: 1.35;
+`
+
+export const HistoryEntryDetail = styled.span`
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.textMuted};
+  line-height: 1.35;
+`
+
+export const HistoryEntryTime = styled.time`
+  font-size: 0.66rem;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const HistoryEmpty = styled.div`
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.textMuted};
+  padding: 0.35rem 0.4rem 0.2rem;
 `
 
 export const CardinalityPanel = styled.div`
