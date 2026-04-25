@@ -8,7 +8,6 @@ import {
   ColorBoxInput,
   ColorBoxLabel,
   DescField,
-  EditHint,
   HeaderMetaRow,
   HeaderRoot,
   SavedFlash,
@@ -117,12 +116,6 @@ export function PageHeader({
         {savedFlash ? <SavedFlash>Salvo neste navegador</SavedFlash> : null}
         <span>Última atualização: {formatDisplayDate(updatedAt)}</span>
       </HeaderMetaRow>
-      {canUpdate ? (
-        <EditHint>
-          Clique no nome ou na descrição para editar. A cor à esquerda vale para os
-          cabeçalhos das tabelas na modelagem.
-        </EditHint>
-      ) : null}
     </HeaderRoot>
   )
 }

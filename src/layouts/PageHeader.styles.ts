@@ -148,13 +148,6 @@ export const SavedFlash = styled.span`
   color: ${({ theme }) => theme.primary};
 `
 
-export const EditHint = styled.p`
-  margin: 0.5rem 0 0;
-  font-size: 0.78rem;
-  color: ${({ theme }) => theme.textMuted};
-  opacity: 0.85;
-`
-
 /** Caixa arredondada com seletor nativo de cor (modelagem). */
 export const ColorBoxLabel = styled.label`
   flex-shrink: 0;

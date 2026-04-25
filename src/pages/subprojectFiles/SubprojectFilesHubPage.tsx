@@ -1,0 +1,80 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { ARCHITECTURE_KIND_LABEL } from '../../components/ProjectArchitectureCanvas/architectureKindMeta'
+import { resolveProjectById } from '../../data/projects'
+import { listArchitectureBlocks } from './architectureBlocksLoader'
+import {
+  BackLinkStyled,
+  HubCard,
+  HubCardMeta,
+  HubCardTitle,
+  HubEmpty,
+  HubGrid,
+  PageDesc,
+  PageTitle,
+} from './SubprojectFilesLayout.styles'
+import { ModelingPageRoot } from '../DatabaseModeling.styles'
+
+export function SubprojectFilesHubPage() {
+  const { projectId } = useParams<{ projectId: string }>()
+  const [refreshTick, setRefreshTick] = useState(0)
+
+  useEffect(() => {
+    const bump = () => setRefreshTick((n) => n + 1)
+    window.addEventListener('flow-project-meta-changed', bump)
+    window.addEventListener('flow-architecture-changed', bump)
+    return () => {
+      window.removeEventListener('flow-project-meta-changed', bump)
+      window.removeEventListener('flow-architecture-changed', bump)
+    }
+  }, [])
+
+  const project = useMemo(
+    () => (projectId ? resolveProjectById(projectId) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshTick intencional
+    [projectId, refreshTick],
+  )
+
+  const blocks = useMemo(
+    () => (projectId ? listArchitectureBlocks(projectId) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshTick invalida ao mudar diagrama
+    [projectId, refreshTick],
+  )
+
+  if (!projectId) {
+    return <Navigate to="/projects" replace />
+  }
+
+  if (!project) {
+    return <Navigate to="/projects" replace />
+  }
+
+  return (
+    <ModelingPageRoot>
+      <BackLinkStyled to={`/projects/${project.id}`}>← Voltar ao projeto</BackLinkStyled>
+      <PageTitle>Arquivos dos subprojetos</PageTitle>
+      <PageDesc>
+        Escolha um bloco do mapa de arquitetura. A visualização segue o padrão de um repositório
+        (árvore, caminho e painel de símbolos); o conteúdo é preview local até integrar o gerador.
+      </PageDesc>
+      {blocks.length === 0 ? (
+        <HubEmpty>
+          Nenhum bloco no diagrama de arquitetura.{' '}
+          <Link to={`/projects/${project.id}/architecture`}>Abrir o mapa</Link> para criar blocos.
+        </HubEmpty>
+      ) : (
+        <HubGrid>
+          {blocks.map((b) => (
+            <HubCard key={b.nodeId} to={`/projects/${project.id}/subproject-files/${b.nodeId}`}>
+              <HubCardTitle>{b.data.label}</HubCardTitle>
+              <HubCardMeta>
+                {ARCHITECTURE_KIND_LABEL[b.data.kind]}
+                {b.data.slug ? ` · ${b.data.slug}` : ''}
+              </HubCardMeta>
+            </HubCard>
+          ))}
+        </HubGrid>
+      )}
+    </ModelingPageRoot>
+  )
+}

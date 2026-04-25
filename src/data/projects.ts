@@ -4,6 +4,7 @@ import {
   loadDeletedSeedProjectIds,
 } from '../persistence/deletedSeedProjectsStorage'
 import { loadProjectMetadata, removeProjectMetadata } from '../persistence/projectMetadataStorage'
+import { removeArchitectureFlow } from '../persistence/architectureFlowStorage'
 import { removeModelingFlow } from '../persistence/modelingFlowStorage'
 import {
   generateUserProjectId,
@@ -111,6 +112,7 @@ const primaryColorStorageKey = (projectId: string) =>
 function purgeProjectLocalPersistence(projectId: string): void {
   removeProjectMetadata(projectId)
   removeModelingFlow(projectId)
+  removeArchitectureFlow(projectId)
   try {
     localStorage.removeItem(primaryDbStorageKey(projectId))
     localStorage.removeItem(primaryColorStorageKey(projectId))

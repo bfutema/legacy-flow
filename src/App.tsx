@@ -9,7 +9,10 @@ import { DatabaseModeling } from './pages/DatabaseModeling'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { Login } from './pages/Login'
 import { NewProject } from './pages/NewProject'
+import { ProjectArchitecture } from './pages/ProjectArchitecture'
 import { ProjectDetail } from './pages/ProjectDetail'
+import { SubprojectFilesHubPage } from './pages/subprojectFiles/SubprojectFilesHubPage'
+import { SubprojectFilesViewPage } from './pages/subprojectFiles/SubprojectFilesViewPage'
 import { Projects } from './pages/Projects'
 import { Allocations } from './pages/Allocations'
 import { OrganogramPage } from './pages/OrganogramPage'
@@ -32,6 +35,11 @@ function RedirectLegacyProjectDetail() {
 function RedirectLegacyProjectModeling() {
   const { projectId } = useParams<{ projectId: string }>()
   return <Navigate to={`/projects/${projectId}/modeling`} replace />
+}
+
+function RedirectLegacyProjectArchitecture() {
+  const { projectId } = useParams<{ projectId: string }>()
+  return <Navigate to={`/projects/${projectId}/architecture`} replace />
 }
 
 export default function App() {
@@ -92,6 +100,30 @@ export default function App() {
                 element={
                   <RequireAbility I="update" a="Project">
                     <DatabaseModeling />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/:projectId/architecture"
+                element={
+                  <RequireAbility I="update" a="Project">
+                    <ProjectArchitecture />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/:projectId/subproject-files/:nodeId"
+                element={
+                  <RequireAbility I="read" a="Project">
+                    <SubprojectFilesViewPage />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/:projectId/subproject-files"
+                element={
+                  <RequireAbility I="read" a="Project">
+                    <SubprojectFilesHubPage />
                   </RequireAbility>
                 }
               />
@@ -182,6 +214,10 @@ export default function App() {
               <Route
                 path="/projetos/:projectId/modelagem"
                 element={<RedirectLegacyProjectModeling />}
+              />
+              <Route
+                path="/projetos/:projectId/arquitetura"
+                element={<RedirectLegacyProjectArchitecture />}
               />
               <Route
                 path="/relatorios"

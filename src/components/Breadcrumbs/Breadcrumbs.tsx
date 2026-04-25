@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getUserById } from '../../data/directoryUsers'
 import { resolveProjectById } from '../../data/projects'
+import { findArchitectureBlock } from '../../pages/subprojectFiles/architectureBlocksLoader'
 import { CrumbLink, Current, Nav, Sep } from './Breadcrumbs.styles'
 
 type CrumbItem = { label: string; path?: string }
@@ -81,6 +82,44 @@ function crumbsForPath(pathname: string): CrumbItem[] {
     ]
   }
 
+  const projArchitecture = normalized.match(/^\/projects\/([^/]+)\/architecture$/)
+  if (projArchitecture) {
+    const p = resolveProjectById(projArchitecture[1])
+    return [
+      { label: 'Projetos', path: '/projects' },
+      { label: p?.name ?? 'Projeto', path: `/projects/${projArchitecture[1]}` },
+      { label: 'Arquitetura' },
+    ]
+  }
+
+  const projSubFilesView = normalized.match(
+    /^\/projects\/([^/]+)\/subproject-files\/([^/]+)$/,
+  )
+  if (projSubFilesView) {
+    const p = resolveProjectById(projSubFilesView[1])
+    const block = findArchitectureBlock(projSubFilesView[1], projSubFilesView[2])
+    const sublabel = block?.data.label ?? 'Subprojeto'
+    return [
+      { label: 'Projetos', path: '/projects' },
+      { label: p?.name ?? 'Projeto', path: `/projects/${projSubFilesView[1]}` },
+      {
+        label: 'Arquivos dos subprojetos',
+        path: `/projects/${projSubFilesView[1]}/subproject-files`,
+      },
+      { label: sublabel },
+    ]
+  }
+
+  const projSubFilesHub = normalized.match(/^\/projects\/([^/]+)\/subproject-files$/)
+  if (projSubFilesHub) {
+    const p = resolveProjectById(projSubFilesHub[1])
+    return [
+      { label: 'Projetos', path: '/projects' },
+      { label: p?.name ?? 'Projeto', path: `/projects/${projSubFilesHub[1]}` },
+      { label: 'Arquivos dos subprojetos' },
+    ]
+  }
+
   const fallback: CrumbItem[] = [{ label: 'Dashboard', path: '/' }]
   const tail = normalized.replace(/^\//, '')
   if (tail && tail !== '') {
@@ -98,12 +137,18 @@ export function Breadcrumbs() {
     const bump = () => setRefreshTick((n) => n + 1)
     window.addEventListener('flow-project-meta-changed', bump)
     window.addEventListener('flow-app-users-changed', bump)
+    window.addEventListener('flow-architecture-changed', bump)
     return () => {
       window.removeEventListener('flow-project-meta-changed', bump)
       window.removeEventListener('flow-app-users-changed', bump)
+      window.removeEventListener('flow-architecture-changed', bump)
     }
   }, [])
-  const items = useMemo(() => crumbsForPath(pathname), [pathname, refreshTick])
+  const items = useMemo(
+    () => crumbsForPath(pathname),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshTick para metadados e diagrama
+    [pathname, refreshTick],
+  )
 
   return (
     <Nav aria-label="Breadcrumb">
