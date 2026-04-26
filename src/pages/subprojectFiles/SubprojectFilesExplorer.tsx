@@ -10,7 +10,6 @@ import {
   FiTrash2,
 } from 'react-icons/fi'
 import { VscNewFile, VscNewFolder } from 'react-icons/vsc'
-import { useTheme } from 'styled-components'
 import { ARCHITECTURE_KIND_LABEL } from '../../components/ProjectArchitectureCanvas/architectureKindMeta'
 import {
   normalizeTechForNode,
@@ -22,14 +21,15 @@ import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { useProjectPrimaryDatabase } from '../../hooks/useProjectPrimaryDatabase'
 import { mockContentForPath } from './mockFileContent'
 import { pathsToTree, type PathTreeNode } from './pathTree'
-import { extractSymbolsFromContent } from './extractSymbols'
 import {
+  BreadcrumbSpacer,
   BreadcrumbBar,
   CodeScroll,
   ConfirmActions,
   ConfirmModal,
   ConfirmText,
   ConfirmTitle,
+  EditorThemeSelect,
   EditorHost,
   CrumbLink,
   CrumbPart,
@@ -39,11 +39,6 @@ import {
   ModalBackdrop,
   PageRoot,
   Shell,
-  SymbolRow,
-  SymbolsColumn,
-  SymbolsHeader,
-  SymbolsScroll,
-  SymbolsSearch,
   Tab,
   TabRow,
   ToolbarBtn,
@@ -63,13 +58,18 @@ import {
 } from './SubprojectFilesLayout.styles'
 
 const EXPLORER_STORAGE_VERSION = 'v1'
+const DRACULA_THEME = 'flow-dracula'
+const FLOW_THEME = 'flow-app'
+type ExplorerEditorTheme = 'dracula' | 'flow'
+
 type ExplorerLocalState = {
   paths: string[]
   fileContents?: Record<string, string>
+  lastOpenedFilePath?: string
+  editorTheme?: ExplorerEditorTheme
   selectedPath?: string
   selectedIsFile?: boolean
   treeQuery?: string
-  symQuery?: string
   expandedFolders?: string[]
 }
 
@@ -113,6 +113,60 @@ function inferLanguageFromPath(path: string): string {
   if (name.endsWith('.sh')) return 'shell'
   if (name.endsWith('.yml') || name.endsWith('.yaml')) return 'yaml'
   return 'plaintext'
+}
+
+function defineMonacoThemes(monaco: Parameters<NonNullable<React.ComponentProps<typeof Editor>['beforeMount']>>[0]) {
+  monaco.editor.defineTheme(DRACULA_THEME, {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '6272A4' },
+      { token: 'keyword', foreground: 'FF79C6' },
+      { token: 'string', foreground: 'F1FA8C' },
+      { token: 'number', foreground: 'BD93F9' },
+      { token: 'type.identifier', foreground: '8BE9FD' },
+      { token: 'identifier', foreground: 'F8F8F2' },
+      { token: 'delimiter', foreground: 'F8F8F2' },
+    ],
+    colors: {
+      'editor.background': '#282A36',
+      'editor.foreground': '#F8F8F2',
+      'editorLineNumber.foreground': '#6272A4',
+      'editorLineNumber.activeForeground': '#F8F8F2',
+      'editorCursor.foreground': '#FF79C6',
+      'editor.selectionBackground': '#44475A',
+      'editor.inactiveSelectionBackground': '#3A3E55',
+      'editor.lineHighlightBackground': '#2E3140',
+      'editorIndentGuide.background1': '#3B3E4F',
+      'editorIndentGuide.activeBackground1': '#6272A4',
+    },
+  })
+
+  monaco.editor.defineTheme(FLOW_THEME, {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '64748B' },
+      { token: 'keyword', foreground: 'A78BFA' },
+      { token: 'string', foreground: '34D399' },
+      { token: 'number', foreground: '38BDF8' },
+      { token: 'type.identifier', foreground: 'F9A8D4' },
+      { token: 'identifier', foreground: 'E2E8F0' },
+      { token: 'delimiter', foreground: 'CBD5E1' },
+    ],
+    colors: {
+      'editor.background': '#0B1220',
+      'editor.foreground': '#E2E8F0',
+      'editorLineNumber.foreground': '#64748B',
+      'editorLineNumber.activeForeground': '#A78BFA',
+      'editorCursor.foreground': '#A78BFA',
+      'editor.selectionBackground': '#1E293B',
+      'editor.inactiveSelectionBackground': '#172033',
+      'editor.lineHighlightBackground': '#0F172A',
+      'editorIndentGuide.background1': '#1E293B',
+      'editorIndentGuide.activeBackground1': '#475569',
+    },
+  })
 }
 
 function filterTree(nodes: PathTreeNode[], q: string): PathTreeNode[] {
@@ -331,15 +385,15 @@ export function SubprojectFilesExplorer({
   theaterMode,
   onToggleTheater,
 }: Props) {
-  const theme = useTheme()
   const shellRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const { projectCloud } = useProjectCloud(projectId)
   const { primaryDatabase } = useProjectPrimaryDatabase(projectId)
   const [paths, setPaths] = useState<string[]>([])
   const [fileContents, setFileContents] = useState<Record<string, string>>({})
+  const [lastOpenedFilePath, setLastOpenedFilePath] = useState('')
+  const [editorTheme, setEditorTheme] = useState<ExplorerEditorTheme>('dracula')
   const [treeQuery, setTreeQuery] = useState('')
-  const [symQuery, setSymQuery] = useState('')
   const [selectedPath, setSelectedPath] = useState('')
   const [selectedIsFile, setSelectedIsFile] = useState(true)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
@@ -359,10 +413,11 @@ export function SubprojectFilesExplorer({
         if (Array.isArray(parsed.paths)) {
           setPaths(parsed.paths)
           setFileContents(parsed.fileContents ?? {})
+          setLastOpenedFilePath(parsed.lastOpenedFilePath ?? '')
+          setEditorTheme(parsed.editorTheme ?? 'dracula')
           setSelectedPath(parsed.selectedPath ?? '')
           setSelectedIsFile(parsed.selectedIsFile ?? true)
           setTreeQuery(parsed.treeQuery ?? '')
-          setSymQuery(parsed.symQuery ?? '')
           setExpandedFolders(new Set(parsed.expandedFolders ?? []))
           setStorageReady(true)
           return
@@ -373,10 +428,11 @@ export function SubprojectFilesExplorer({
     }
     setPaths(block.data.generatedPaths ?? [])
     setFileContents({})
+    setLastOpenedFilePath('')
+    setEditorTheme('dracula')
     setSelectedPath('')
     setSelectedIsFile(true)
     setTreeQuery('')
-    setSymQuery('')
     setExpandedFolders(new Set())
     setStorageReady(true)
   }, [block.data.generatedPaths, block.nodeId, projectId])
@@ -386,22 +442,24 @@ export function SubprojectFilesExplorer({
     const payload: ExplorerLocalState = {
       paths,
       fileContents,
+      lastOpenedFilePath,
+      editorTheme,
       selectedPath,
       selectedIsFile,
       treeQuery,
-      symQuery,
       expandedFolders: [...expandedFolders],
     }
     localStorage.setItem(storageKey(projectId, block.nodeId), JSON.stringify(payload))
   }, [
     paths,
     fileContents,
+    lastOpenedFilePath,
+    editorTheme,
     projectId,
     block.nodeId,
     selectedPath,
     selectedIsFile,
     treeQuery,
-    symQuery,
     expandedFolders,
     storageReady,
   ])
@@ -431,12 +489,17 @@ export function SubprojectFilesExplorer({
   )
 
   useEffect(() => {
+    if (!selectedPath && lastOpenedFilePath && flatFiles.includes(lastOpenedFilePath)) {
+      setSelectedPath(lastOpenedFilePath)
+      setSelectedIsFile(true)
+      return
+    }
     if (!selectedPath || !flatFiles.includes(selectedPath)) {
       if (selectedIsFile) {
         setSelectedPath(flatFiles[0] ?? '')
       }
     }
-  }, [flatFiles, selectedPath, selectedIsFile])
+  }, [flatFiles, lastOpenedFilePath, selectedPath, selectedIsFile])
   const selectedFilePath = useMemo(
     () => (selectedPath && flatFiles.includes(selectedPath) ? selectedPath : ''),
     [flatFiles, selectedPath],
@@ -445,6 +508,10 @@ export function SubprojectFilesExplorer({
     () => inferLanguageFromPath(selectedFilePath),
     [selectedFilePath],
   )
+  const monacoThemeName = useMemo(
+    () => (editorTheme === 'flow' ? FLOW_THEME : DRACULA_THEME),
+    [editorTheme],
+  )
   const content = useMemo(
     () => {
       if (!selectedFilePath) return '// Selecione um arquivo'
@@ -452,12 +519,6 @@ export function SubprojectFilesExplorer({
     },
     [fileContents, selectedFilePath],
   )
-  const symbols = useMemo(() => extractSymbolsFromContent(content), [content])
-  const filteredSymbols = useMemo(() => {
-    const q = symQuery.trim().toLowerCase()
-    if (!q) return symbols
-    return symbols.filter((s) => s.toLowerCase().includes(q))
-  }, [symbols, symQuery])
 
   const blockTech = useMemo(
     () =>
@@ -485,6 +546,7 @@ export function SubprojectFilesExplorer({
   const onPick = useCallback((path: string, file: boolean) => {
     setSelectedPath(path)
     setSelectedIsFile(file)
+    if (file) setLastOpenedFilePath(path)
   }, [])
 
   const createParent = useMemo(() => {
@@ -536,6 +598,7 @@ export function SubprojectFilesExplorer({
       )
       setSelectedPath(next)
       setSelectedIsFile(true)
+      setLastOpenedFilePath(next)
     }
     cancelCreate()
   }, [cancelCreate, creatingDraft, creatingKind, creatingParentPath])
@@ -548,6 +611,7 @@ export function SubprojectFilesExplorer({
         delete next[path]
         return next
       })
+      setLastOpenedFilePath((prev) => (prev === path ? '' : prev))
       return
     }
     setPendingDelete({ path, file })
@@ -621,6 +685,16 @@ export function SubprojectFilesExplorer({
       const toPrefix = asFolder(baseTarget)
       setSelectedPath(`${toPrefix}${selectedPath.slice(fromPrefix.length)}`)
     }
+    setLastOpenedFilePath((prev) => {
+      if (!prev) return prev
+      if (prev === oldPath) return nextPath
+      if (isDir && prev.startsWith(asFolder(oldPath))) {
+        const fromPrefix = asFolder(oldPath)
+        const toPrefix = asFolder(baseTarget)
+        return `${toPrefix}${prev.slice(fromPrefix.length)}`
+      }
+      return prev
+    })
     cancelRename()
   }, [cancelRename, editingDraft, editingPath, selectedPath])
 
@@ -635,6 +709,9 @@ export function SubprojectFilesExplorer({
       }
       return next
     })
+    setLastOpenedFilePath((prev) =>
+      prev && (prev === folder || prev.startsWith(folder)) ? '' : prev,
+    )
     setPendingDelete(null)
   }, [pendingDelete])
 
@@ -658,6 +735,7 @@ export function SubprojectFilesExplorer({
       return copy
     })
     setSelectedPath(nextPath)
+    setLastOpenedFilePath((prev) => (prev === cleanDrag ? nextPath : prev))
   }, [])
 
   const toggleFolder = useCallback((folderPath: string) => {
@@ -807,6 +885,16 @@ export function SubprojectFilesExplorer({
                 </span>
               )
             })}
+            <BreadcrumbSpacer />
+            <EditorThemeSelect
+              aria-label="Tema do editor"
+              title="Tema do editor Monaco"
+              value={editorTheme}
+              onChange={(e) => setEditorTheme(e.target.value as ExplorerEditorTheme)}
+            >
+              <option value="dracula">Tema: Dracula</option>
+              <option value="flow">Tema: Flow</option>
+            </EditorThemeSelect>
           </BreadcrumbBar>
           <MetaBar>
             <span>
@@ -837,7 +925,8 @@ export function SubprojectFilesExplorer({
                 <Editor
                   path={selectedFilePath}
                   language={selectedLanguage}
-                  theme={theme.mode === 'dark' ? 'vs-dark' : 'light'}
+                  beforeMount={defineMonacoThemes}
+                  theme={monacoThemeName}
                   value={content}
                   onChange={(value) =>
                     setFileContents((prev) => ({
@@ -882,22 +971,6 @@ export function SubprojectFilesExplorer({
           </CodeScroll>
         </MainColumn>
 
-        <SymbolsColumn>
-          <SymbolsHeader>Símbolos</SymbolsHeader>
-          <SymbolsSearch
-            placeholder="Filtrar símbolos…"
-            value={symQuery}
-            onChange={(e) => setSymQuery(e.target.value)}
-            aria-label="Filtrar símbolos"
-          />
-          <SymbolsScroll>
-            {filteredSymbols.map((s) => (
-              <SymbolRow key={s} type="button">
-                {s}
-              </SymbolRow>
-            ))}
-          </SymbolsScroll>
-        </SymbolsColumn>
       </Shell>
       {pendingDelete && !pendingDelete.file ? (
         <ModalBackdrop>

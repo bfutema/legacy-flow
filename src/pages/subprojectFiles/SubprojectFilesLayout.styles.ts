@@ -23,7 +23,7 @@ export const PageRoot = styled.div<{ $theater?: boolean }>`
 
 export const Shell = styled.div<{ $theater?: boolean }>`
   display: grid;
-  grid-template-columns: minmax(200px, 15rem) minmax(0, 1fr) minmax(0, 13rem);
+  grid-template-columns: minmax(200px, 15rem) minmax(0, 1fr);
   gap: 0;
   width: 100%;
   min-height: clamp(420px, calc(100dvh - 13rem), 880px);
@@ -152,6 +152,27 @@ export const BreadcrumbBar = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.border};
   font-size: 0.78rem;
   font-family: ui-monospace, 'Cascadia Code', monospace;
+`
+
+export const BreadcrumbSpacer = styled.span`
+  flex: 1;
+`
+
+export const EditorThemeSelect = styled.select`
+  font: inherit;
+  font-size: 0.72rem;
+  padding: 0.18rem 0.35rem;
+  border-radius: 0.28rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  min-width: 8.25rem;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+  }
 `
 
 export const CrumbSep = styled.span`
