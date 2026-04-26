@@ -83,6 +83,7 @@ export function SubprojectFilesHubPage() {
               b.data.techHint,
               b.data.projectCloud ?? projectCloud,
               b.data.projectPrimaryDatabase ?? primaryDatabase,
+              b.data.clientSurface,
             )
             const label = techLabel(tech)
             return (

@@ -31,6 +31,7 @@ export const ArchitectureBlockNode = memo(function ArchitectureBlockNode({
     data.techHint,
     data.projectCloud,
     data.projectPrimaryDatabase,
+    data.clientSurface,
   )
   const nodeTechLabel = techLabel(nodeTech)
   return (

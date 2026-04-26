@@ -33,6 +33,8 @@ import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { useProjectPrimaryDatabase } from '../../hooks/useProjectPrimaryDatabase'
 import { FsButton } from '../../pages/DatabaseModeling.styles'
 import {
+  ARCH_CLIENT_SURFACES,
+  ARCH_CLIENT_SURFACE_LABELS,
   allowedTechsForKind,
   defaultTechForKind,
   normalizeTechForNode,
@@ -155,6 +157,7 @@ function ArchitectureFlowWorkbench({
       selectedBlockData.techHint,
       selectedBlockData.projectCloud ?? projectCloud,
       selectedBlockData.projectPrimaryDatabase ?? primaryDatabase,
+      selectedBlockData.clientSurface,
     )
   }, [selectedBlockData, projectCloud, primaryDatabase])
   const filteredKinds = useMemo(() => {
@@ -348,7 +351,8 @@ function ArchitectureFlowWorkbench({
         y: window.innerHeight * 0.36,
       })
       const labelBase = ARCHITECTURE_KIND_LABEL[kind]
-      const runtime = defaultTechForKind(kind, projectCloud, primaryDatabase)
+      const clientSurface = kind === 'client' ? 'web' : undefined
+      const runtime = defaultTechForKind(kind, projectCloud, primaryDatabase, clientSurface)
       const newNode: Node<ArchitectureBlockNodeData> = {
         id,
         type: 'architectureBlock',
@@ -357,6 +361,7 @@ function ArchitectureFlowWorkbench({
           projectId,
           label: `${labelBase} novo`,
           kind,
+          clientSurface,
           projectCloud,
           projectPrimaryDatabase: primaryDatabase,
           runtime,
@@ -382,7 +387,9 @@ function ArchitectureFlowWorkbench({
         nds.map((n) => {
           if (n.id !== selectedNodeId || n.type !== 'architectureBlock') return n
           const data = n.data as ArchitectureBlockNodeData
-          if (!allowedTechsForKind(data.kind).includes(runtime as never)) return n
+          if (!allowedTechsForKind(data.kind, data.clientSurface).includes(runtime as never)) {
+            return n
+          }
           return {
             ...n,
             data: {
@@ -395,6 +402,34 @@ function ArchitectureFlowWorkbench({
       )
     },
     [selectedNodeId, setNodes],
+  )
+
+  const updateSelectedClientSurface = useCallback(
+    (clientSurface: ArchitectureBlockNodeData['clientSurface']) => {
+      if (!selectedNodeId || !clientSurface) return
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== selectedNodeId || n.type !== 'architectureBlock') return n
+          const data = n.data as ArchitectureBlockNodeData
+          if (data.kind !== 'client') return n
+          const keepRuntime =
+            data.runtime &&
+            allowedTechsForKind('client', clientSurface).includes(data.runtime)
+              ? data.runtime
+              : defaultTechForKind('client', projectCloud, primaryDatabase, clientSurface)
+          return {
+            ...n,
+            data: {
+              ...data,
+              clientSurface,
+              runtime: keepRuntime,
+              techHint: techLabel(keepRuntime) ?? data.techHint,
+            },
+          }
+        }),
+      )
+    },
+    [primaryDatabase, projectCloud, selectedNodeId, setNodes],
   )
 
   const updateSelectedLabel = useCallback(
@@ -687,6 +722,29 @@ function ArchitectureFlowWorkbench({
             {selectedBlockData &&
             ['client', 'service', 'queue', 'database'].includes(selectedBlockData.kind) ? (
               <RailSection>
+                {selectedBlockData.kind === 'client' ? (
+                  <>
+                    <RailTitle>Tipo do cliente</RailTitle>
+                    <InlineLabel htmlFor="arch-client-surface-select">
+                      Plataforma do app cliente
+                    </InlineLabel>
+                    <SmallSelect
+                      id="arch-client-surface-select"
+                      value={selectedBlockData.clientSurface ?? 'web'}
+                      onChange={(e) =>
+                        updateSelectedClientSurface(
+                          e.target.value as ArchitectureBlockNodeData['clientSurface'],
+                        )
+                      }
+                    >
+                      {ARCH_CLIENT_SURFACES.map((surface) => (
+                        <option key={surface} value={surface}>
+                          {ARCH_CLIENT_SURFACE_LABELS[surface]}
+                        </option>
+                      ))}
+                    </SmallSelect>
+                  </>
+                ) : null}
                 <RailTitle>Tecnologia do bloco</RailTitle>
                 <InlineLabel htmlFor="arch-runtime-select">
                   {selectedBlockData.label}
@@ -694,11 +752,19 @@ function ArchitectureFlowWorkbench({
                 <SmallSelect
                   id="arch-runtime-select"
                   value={
-                    selectedBlockTech ?? allowedTechsForKind(selectedBlockData.kind)[0] ?? ''
+                    selectedBlockTech ??
+                    allowedTechsForKind(
+                      selectedBlockData.kind,
+                      selectedBlockData.clientSurface,
+                    )[0] ??
+                    ''
                   }
                   onChange={(e) => updateSelectedRuntime(e.target.value)}
                 >
-                  {allowedTechsForKind(selectedBlockData.kind).map((tech) => (
+                  {allowedTechsForKind(
+                    selectedBlockData.kind,
+                    selectedBlockData.clientSurface,
+                  ).map((tech) => (
                     <option key={tech} value={tech}>
                       {techLabel(tech)}
                     </option>

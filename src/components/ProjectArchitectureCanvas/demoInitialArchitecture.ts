@@ -25,6 +25,7 @@ export function createDemoArchitectureNodes(
       projectId,
       label: 'Painel administrativo',
       kind: 'client',
+      clientSurface: 'web',
       runtime: 'vite',
       techHint: techLabel('vite'),
       slug: 'admin-frontend',

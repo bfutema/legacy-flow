@@ -1,24 +1,52 @@
 import {
   SiAdonisjs,
   SiAngular,
+  SiElectron,
   SiExpress,
+  SiExpo,
   SiFastify,
+  SiFlutter,
   SiGooglecloud,
   SiKoa,
   SiMysql,
   SiNestjs,
   SiNextdotjs,
   SiPostgresql,
+  SiReact,
   SiVite,
   SiVuedotjs,
 } from 'react-icons/si'
 import { FaAws, FaMicrosoft } from 'react-icons/fa6'
+import { FiTerminal } from 'react-icons/fi'
 import type { ComponentType, ReactNode } from 'react'
 import type { ProjectCloudProvider } from '../../data/cloudProviders'
 import type { PrimaryDatabaseType } from '../../data/databaseEngines'
 import type { ArchitectureBlockKind } from './architectureTypes'
 
-export type ArchitectureClientTech = 'vite' | 'nextjs' | 'vuejs' | 'angular'
+export type ArchitectureClientSurface = 'web' | 'mobile' | 'desktop' | 'cli'
+export const ARCH_CLIENT_SURFACES: ArchitectureClientSurface[] = [
+  'web',
+  'mobile',
+  'desktop',
+  'cli',
+]
+export const ARCH_CLIENT_SURFACE_LABELS: Record<ArchitectureClientSurface, string> = {
+  web: 'Web',
+  mobile: 'Mobile',
+  desktop: 'Desktop',
+  cli: 'CLI',
+}
+
+export type ArchitectureClientTech =
+  | 'vite'
+  | 'nextjs'
+  | 'vuejs'
+  | 'angular'
+  | 'electron'
+  | 'expo'
+  | 'react-native'
+  | 'flutter'
+  | 'cli'
 export type ArchitectureServiceTech =
   | 'fastify'
   | 'express'
@@ -39,7 +67,25 @@ export const ARCH_CLIENT_TECHS: ArchitectureClientTech[] = [
   'nextjs',
   'vuejs',
   'angular',
+  'electron',
+  'expo',
+  'react-native',
+  'flutter',
+  'cli',
 ]
+export const ARCH_CLIENT_WEB_TECHS: ArchitectureClientTech[] = [
+  'vite',
+  'nextjs',
+  'vuejs',
+  'angular',
+]
+export const ARCH_CLIENT_MOBILE_TECHS: ArchitectureClientTech[] = [
+  'expo',
+  'react-native',
+  'flutter',
+]
+export const ARCH_CLIENT_DESKTOP_TECHS: ArchitectureClientTech[] = ['electron']
+export const ARCH_CLIENT_CLI_TECHS: ArchitectureClientTech[] = ['cli']
 export const ARCH_SERVICE_TECHS: ArchitectureServiceTech[] = [
   'fastify',
   'express',
@@ -74,6 +120,11 @@ const TECH_LABEL: Record<ArchitectureRuntimeTech, string> = {
   mysql: 'MySQL',
   psql: 'psql',
   mssql: 'MSSQL',
+  electron: 'Electron',
+  expo: 'Expo',
+  'react-native': 'React Native',
+  flutter: 'Flutter',
+  cli: 'CLI',
 }
 
 const TECH_ICON = {
@@ -92,6 +143,11 @@ const TECH_ICON = {
   mysql: SiMysql,
   psql: SiPostgresql,
   mssql: FaMicrosoft,
+  electron: SiElectron,
+  expo: SiExpo,
+  'react-native': SiReact,
+  flutter: SiFlutter,
+  cli: FiTerminal,
 } satisfies Record<ArchitectureRuntimeTech, ComponentType<{ size?: number }>>
 
 const TECH_FROM_HINT: Record<string, ArchitectureRuntimeTech> = {
@@ -123,12 +179,28 @@ const TECH_FROM_HINT: Record<string, ArchitectureRuntimeTech> = {
   psql: 'psql',
   mssql: 'mssql',
   'sql server': 'mssql',
+  electron: 'electron',
+  expo: 'expo',
+  'react native': 'react-native',
+  flutter: 'flutter',
+  cli: 'cli',
+  terminal: 'cli',
+  commandline: 'cli',
 }
 
 function defaultQueueTechForCloud(cloud: ProjectCloudProvider): ArchitectureQueueTech {
   if (cloud === 'gcp') return 'gcp-pubsub'
   if (cloud === 'azure') return 'azure-service-bus'
   return 'aws-sqs'
+}
+
+function defaultClientTechForSurface(
+  clientSurface: ArchitectureClientSurface,
+): ArchitectureClientTech {
+  if (clientSurface === 'mobile') return 'expo'
+  if (clientSurface === 'desktop') return 'electron'
+  if (clientSurface === 'cli') return 'cli'
+  return 'vite'
 }
 
 function defaultDatabaseTechForProject(db: PrimaryDatabaseType): ArchitectureDatabaseTech {
@@ -141,8 +213,9 @@ export function defaultTechForKind(
   kind: ArchitectureBlockKind,
   projectCloud: ProjectCloudProvider = 'aws',
   projectPrimaryDatabase: PrimaryDatabaseType = 'mysql',
+  clientSurface: ArchitectureClientSurface = 'web',
 ): ArchitectureRuntimeTech | undefined {
-  if (kind === 'client') return 'vite'
+  if (kind === 'client') return defaultClientTechForSurface(clientSurface)
   if (kind === 'service') return 'fastify'
   if (kind === 'queue') return defaultQueueTechForCloud(projectCloud)
   if (kind === 'database') return defaultDatabaseTechForProject(projectPrimaryDatabase)
@@ -168,16 +241,28 @@ export function renderTechIcon(
   return <Icon size={size} aria-hidden />
 }
 
-export function allowedTechsForKind(kind: ArchitectureBlockKind): ArchitectureRuntimeTech[] {
-  if (kind === 'client') return ARCH_CLIENT_TECHS
+export function allowedTechsForKind(
+  kind: ArchitectureBlockKind,
+  clientSurface: ArchitectureClientSurface = 'web',
+): ArchitectureRuntimeTech[] {
+  if (kind === 'client') {
+    if (clientSurface === 'mobile') return ARCH_CLIENT_MOBILE_TECHS
+    if (clientSurface === 'desktop') return ARCH_CLIENT_DESKTOP_TECHS
+    if (clientSurface === 'cli') return ARCH_CLIENT_CLI_TECHS
+    return ARCH_CLIENT_WEB_TECHS
+  }
   if (kind === 'service') return ARCH_SERVICE_TECHS
   if (kind === 'queue') return ARCH_QUEUE_TECHS
   if (kind === 'database') return ARCH_DATABASE_TECHS
   return []
 }
 
-function isAllowedForKind(kind: ArchitectureBlockKind, tech: ArchitectureRuntimeTech): boolean {
-  return allowedTechsForKind(kind).includes(tech)
+function isAllowedForKind(
+  kind: ArchitectureBlockKind,
+  tech: ArchitectureRuntimeTech,
+  clientSurface: ArchitectureClientSurface,
+): boolean {
+  return allowedTechsForKind(kind, clientSurface).includes(tech)
 }
 
 export function normalizeTechForNode(
@@ -186,9 +271,10 @@ export function normalizeTechForNode(
   techHint?: string,
   projectCloud: ProjectCloudProvider = 'aws',
   projectPrimaryDatabase: PrimaryDatabaseType = 'mysql',
+  clientSurface: ArchitectureClientSurface = 'web',
 ): ArchitectureRuntimeTech | undefined {
-  if (tech && isAllowedForKind(kind, tech)) return tech
+  if (tech && isAllowedForKind(kind, tech, clientSurface)) return tech
   const byHint = techHint ? TECH_FROM_HINT[techHint.trim().toLowerCase()] : undefined
-  if (byHint && isAllowedForKind(kind, byHint)) return byHint
-  return defaultTechForKind(kind, projectCloud, projectPrimaryDatabase)
+  if (byHint && isAllowedForKind(kind, byHint, clientSurface)) return byHint
+  return defaultTechForKind(kind, projectCloud, projectPrimaryDatabase, clientSurface)
 }

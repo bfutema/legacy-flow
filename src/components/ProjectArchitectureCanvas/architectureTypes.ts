@@ -1,7 +1,10 @@
 import type { Node } from '@xyflow/react'
 import type { ProjectCloudProvider } from '../../data/cloudProviders'
 import type { PrimaryDatabaseType } from '../../data/databaseEngines'
-import type { ArchitectureRuntimeTech } from './architectureTechMeta'
+import type {
+  ArchitectureClientSurface,
+  ArchitectureRuntimeTech,
+} from './architectureTechMeta'
 
 /** Tipos de bloco na vista inicial; novos tipos (cloud etc.) entram aqui depois. */
 export type ArchitectureBlockKind =
@@ -21,6 +24,8 @@ export type ArchitectureBlockNodeData = {
   techHint?: string
   /** Runtime/framework principal do bloco (cliente/serviço). */
   runtime?: ArchitectureRuntimeTech
+  /** Perfil do cliente (web/mobile/desktop/cli). */
+  clientSurface?: ArchitectureClientSurface
   /** Cloud atribuída ao bloco (usada em defaults de infraestrutura). */
   projectCloud?: ProjectCloudProvider
   /** Banco principal do projeto para defaults de bloco de banco de dados. */

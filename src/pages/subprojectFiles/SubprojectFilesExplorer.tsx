@@ -152,6 +152,7 @@ export function SubprojectFilesExplorer({ projectId, projectName, block }: Props
         block.data.techHint,
         block.data.projectCloud ?? projectCloud,
         block.data.projectPrimaryDatabase ?? primaryDatabase,
+        block.data.clientSurface,
       ),
     [
       block.data.kind,
@@ -159,6 +160,7 @@ export function SubprojectFilesExplorer({ projectId, projectName, block }: Props
       block.data.projectPrimaryDatabase,
       block.data.runtime,
       block.data.techHint,
+      block.data.clientSurface,
       projectCloud,
       primaryDatabase,
     ],
