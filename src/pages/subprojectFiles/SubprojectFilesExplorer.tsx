@@ -17,6 +17,7 @@ import {
   techLabel,
 } from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import type { ArchitectureBlockSummary } from './architectureBlocksLoader'
+import { useThemeMode } from '../../contexts/ThemeContext'
 import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { useProjectPrimaryDatabase } from '../../hooks/useProjectPrimaryDatabase'
 import { mockContentForPath } from './mockFileContent'
@@ -58,8 +59,9 @@ import {
 } from './SubprojectFilesLayout.styles'
 
 const EXPLORER_STORAGE_VERSION = 'v1'
-const DRACULA_THEME = 'flow-dracula'
-const FLOW_THEME = 'flow-app'
+const DRACULA_DARK_THEME = 'flow-dracula-dark'
+const FLOW_DARK_THEME = 'flow-app-dark'
+const FLOW_LIGHT_THEME = 'flow-app-light'
 type ExplorerEditorTheme = 'dracula' | 'flow'
 
 type ExplorerLocalState = {
@@ -116,7 +118,7 @@ function inferLanguageFromPath(path: string): string {
 }
 
 function defineMonacoThemes(monaco: Parameters<NonNullable<React.ComponentProps<typeof Editor>['beforeMount']>>[0]) {
-  monaco.editor.defineTheme(DRACULA_THEME, {
+  monaco.editor.defineTheme(DRACULA_DARK_THEME, {
     base: 'vs-dark',
     inherit: true,
     rules: [
@@ -142,7 +144,7 @@ function defineMonacoThemes(monaco: Parameters<NonNullable<React.ComponentProps<
     },
   })
 
-  monaco.editor.defineTheme(FLOW_THEME, {
+  monaco.editor.defineTheme(FLOW_DARK_THEME, {
     base: 'vs-dark',
     inherit: true,
     rules: [
@@ -165,6 +167,32 @@ function defineMonacoThemes(monaco: Parameters<NonNullable<React.ComponentProps<
       'editor.lineHighlightBackground': '#0F172A',
       'editorIndentGuide.background1': '#1E293B',
       'editorIndentGuide.activeBackground1': '#475569',
+    },
+  })
+
+  monaco.editor.defineTheme(FLOW_LIGHT_THEME, {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '64748B' },
+      { token: 'keyword', foreground: '7C3AED' },
+      { token: 'string', foreground: '059669' },
+      { token: 'number', foreground: '0284C7' },
+      { token: 'type.identifier', foreground: 'DB2777' },
+      { token: 'identifier', foreground: '0F172A' },
+      { token: 'delimiter', foreground: '334155' },
+    ],
+    colors: {
+      'editor.background': '#F8FAFC',
+      'editor.foreground': '#0F172A',
+      'editorLineNumber.foreground': '#94A3B8',
+      'editorLineNumber.activeForeground': '#7C3AED',
+      'editorCursor.foreground': '#7C3AED',
+      'editor.selectionBackground': '#E2E8F0',
+      'editor.inactiveSelectionBackground': '#EEF2F7',
+      'editor.lineHighlightBackground': '#F1F5F9',
+      'editorIndentGuide.background1': '#E2E8F0',
+      'editorIndentGuide.activeBackground1': '#CBD5E1',
     },
   })
 }
@@ -385,6 +413,7 @@ export function SubprojectFilesExplorer({
   theaterMode,
   onToggleTheater,
 }: Props) {
+  const { mode } = useThemeMode()
   const shellRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const { projectCloud } = useProjectCloud(projectId)
@@ -509,8 +538,13 @@ export function SubprojectFilesExplorer({
     [selectedFilePath],
   )
   const monacoThemeName = useMemo(
-    () => (editorTheme === 'flow' ? FLOW_THEME : DRACULA_THEME),
-    [editorTheme],
+    () => {
+      if (editorTheme === 'flow') {
+        return mode === 'light' ? FLOW_LIGHT_THEME : FLOW_DARK_THEME
+      }
+      return DRACULA_DARK_THEME
+    },
+    [editorTheme, mode],
   )
   const content = useMemo(
     () => {
