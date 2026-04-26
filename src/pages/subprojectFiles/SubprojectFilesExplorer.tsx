@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Editor from '@monaco-editor/react'
 import {
   FiChevronDown,
   FiChevronRight,
@@ -9,6 +10,7 @@ import {
   FiTrash2,
 } from 'react-icons/fi'
 import { VscNewFile, VscNewFolder } from 'react-icons/vsc'
+import { useTheme } from 'styled-components'
 import { ARCHITECTURE_KIND_LABEL } from '../../components/ProjectArchitectureCanvas/architectureKindMeta'
 import {
   normalizeTechForNode,
@@ -24,16 +26,14 @@ import { extractSymbolsFromContent } from './extractSymbols'
 import {
   BreadcrumbBar,
   CodeScroll,
-  CodeTable,
   ConfirmActions,
   ConfirmModal,
   ConfirmText,
   ConfirmTitle,
+  EditorHost,
   CrumbLink,
   CrumbPart,
   CrumbSep,
-  LineCode,
-  LineNo,
   MainColumn,
   MetaBar,
   ModalBackdrop,
@@ -65,6 +65,7 @@ import {
 const EXPLORER_STORAGE_VERSION = 'v1'
 type ExplorerLocalState = {
   paths: string[]
+  fileContents?: Record<string, string>
   selectedPath?: string
   selectedIsFile?: boolean
   treeQuery?: string
@@ -96,6 +97,22 @@ function folderOfPath(path: string): string {
 
 function asFolder(path: string): string {
   return path.endsWith('/') ? path : `${path}/`
+}
+
+function inferLanguageFromPath(path: string): string {
+  const name = path.toLowerCase()
+  if (name.endsWith('.tsx')) return 'typescript'
+  if (name.endsWith('.ts')) return 'typescript'
+  if (name.endsWith('.jsx')) return 'javascript'
+  if (name.endsWith('.js') || name.endsWith('.mjs') || name.endsWith('.cjs')) return 'javascript'
+  if (name.endsWith('.json')) return 'json'
+  if (name.endsWith('.css')) return 'css'
+  if (name.endsWith('.html')) return 'html'
+  if (name.endsWith('.md')) return 'markdown'
+  if (name.endsWith('.sql')) return 'sql'
+  if (name.endsWith('.sh')) return 'shell'
+  if (name.endsWith('.yml') || name.endsWith('.yaml')) return 'yaml'
+  return 'plaintext'
 }
 
 function filterTree(nodes: PathTreeNode[], q: string): PathTreeNode[] {
@@ -314,11 +331,13 @@ export function SubprojectFilesExplorer({
   theaterMode,
   onToggleTheater,
 }: Props) {
+  const theme = useTheme()
   const shellRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const { projectCloud } = useProjectCloud(projectId)
   const { primaryDatabase } = useProjectPrimaryDatabase(projectId)
   const [paths, setPaths] = useState<string[]>([])
+  const [fileContents, setFileContents] = useState<Record<string, string>>({})
   const [treeQuery, setTreeQuery] = useState('')
   const [symQuery, setSymQuery] = useState('')
   const [selectedPath, setSelectedPath] = useState('')
@@ -339,6 +358,7 @@ export function SubprojectFilesExplorer({
         const parsed = JSON.parse(raw) as ExplorerLocalState
         if (Array.isArray(parsed.paths)) {
           setPaths(parsed.paths)
+          setFileContents(parsed.fileContents ?? {})
           setSelectedPath(parsed.selectedPath ?? '')
           setSelectedIsFile(parsed.selectedIsFile ?? true)
           setTreeQuery(parsed.treeQuery ?? '')
@@ -352,6 +372,7 @@ export function SubprojectFilesExplorer({
       }
     }
     setPaths(block.data.generatedPaths ?? [])
+    setFileContents({})
     setSelectedPath('')
     setSelectedIsFile(true)
     setTreeQuery('')
@@ -364,6 +385,7 @@ export function SubprojectFilesExplorer({
     if (!storageReady) return
     const payload: ExplorerLocalState = {
       paths,
+      fileContents,
       selectedPath,
       selectedIsFile,
       treeQuery,
@@ -373,6 +395,7 @@ export function SubprojectFilesExplorer({
     localStorage.setItem(storageKey(projectId, block.nodeId), JSON.stringify(payload))
   }, [
     paths,
+    fileContents,
     projectId,
     block.nodeId,
     selectedPath,
@@ -418,9 +441,16 @@ export function SubprojectFilesExplorer({
     () => (selectedPath && flatFiles.includes(selectedPath) ? selectedPath : ''),
     [flatFiles, selectedPath],
   )
-  const content = useMemo(
-    () => (selectedFilePath ? mockContentForPath(selectedFilePath) : '// Selecione um arquivo'),
+  const selectedLanguage = useMemo(
+    () => inferLanguageFromPath(selectedFilePath),
     [selectedFilePath],
+  )
+  const content = useMemo(
+    () => {
+      if (!selectedFilePath) return '// Selecione um arquivo'
+      return fileContents[selectedFilePath] ?? mockContentForPath(selectedFilePath)
+    },
+    [fileContents, selectedFilePath],
   )
   const symbols = useMemo(() => extractSymbolsFromContent(content), [content])
   const filteredSymbols = useMemo(() => {
@@ -429,7 +459,6 @@ export function SubprojectFilesExplorer({
     return symbols.filter((s) => s.toLowerCase().includes(q))
   }, [symbols, symQuery])
 
-  const lineRows = useMemo(() => content.split('\n'), [content])
   const blockTech = useMemo(
     () =>
       normalizeTechForNode(
@@ -502,6 +531,9 @@ export function SubprojectFilesExplorer({
     } else {
       const next = parent ? `${parent}/${name}` : name
       setPaths((prev) => (prev.includes(next) ? prev : [...prev, next]))
+      setFileContents((prev) =>
+        prev[next] ? prev : { ...prev, [next]: mockContentForPath(next) },
+      )
       setSelectedPath(next)
       setSelectedIsFile(true)
     }
@@ -511,6 +543,11 @@ export function SubprojectFilesExplorer({
   const askRemove = useCallback((path: string, file: boolean) => {
     if (file) {
       setPaths((prev) => prev.filter((p) => p !== path))
+      setFileContents((prev) => {
+        const next = { ...prev }
+        delete next[path]
+        return next
+      })
       return
     }
     setPendingDelete({ path, file })
@@ -557,6 +594,25 @@ export function SubprojectFilesExplorer({
       }
       return prev.map((p) => (p === oldPath ? nextPath : p))
     })
+    setFileContents((prev) => {
+      if (oldPath === nextPath) return prev
+      if (isDir) {
+        const fromPrefix = asFolder(oldPath)
+        const toPrefix = asFolder(baseTarget)
+        const mapped: Record<string, string> = {}
+        for (const [k, v] of Object.entries(prev)) {
+          if (k.startsWith(fromPrefix)) mapped[`${toPrefix}${k.slice(fromPrefix.length)}`] = v
+          else mapped[k] = v
+        }
+        return mapped
+      }
+      const copy = { ...prev }
+      if (copy[oldPath]) {
+        copy[nextPath] = copy[oldPath]
+        delete copy[oldPath]
+      }
+      return copy
+    })
 
     if (selectedPath === oldPath) {
       setSelectedPath(nextPath)
@@ -572,6 +628,13 @@ export function SubprojectFilesExplorer({
     if (!pendingDelete || pendingDelete.file) return
     const folder = asFolder(pendingDelete.path)
     setPaths((prev) => prev.filter((p) => p !== folder && !p.startsWith(folder)))
+    setFileContents((prev) => {
+      const next: Record<string, string> = {}
+      for (const [k, v] of Object.entries(prev)) {
+        if (!k.startsWith(folder)) next[k] = v
+      }
+      return next
+    })
     setPendingDelete(null)
   }, [pendingDelete])
 
@@ -586,6 +649,13 @@ export function SubprojectFilesExplorer({
       if (!prev.includes(cleanDrag)) return prev
       const without = prev.filter((p) => p !== cleanDrag)
       return without.includes(nextPath) ? without : [...without, nextPath]
+    })
+    setFileContents((prev) => {
+      if (!prev[cleanDrag]) return prev
+      const copy = { ...prev }
+      copy[nextPath] = copy[cleanDrag]
+      delete copy[cleanDrag]
+      return copy
     })
     setSelectedPath(nextPath)
   }, [])
@@ -741,7 +811,7 @@ export function SubprojectFilesExplorer({
           <MetaBar>
             <span>
               <strong style={{ color: 'inherit' }}>Preview local</strong> ·{' '}
-              {lineRows.length} linhas · {ARCHITECTURE_KIND_LABEL[block.data.kind]}
+              {content.split('\n').length} linhas · {ARCHITECTURE_KIND_LABEL[block.data.kind]}
               {blockTechLabel ? (
                 <span
                   style={{
@@ -762,7 +832,30 @@ export function SubprojectFilesExplorer({
             <Tab>Blame</Tab>
           </TabRow>
           <CodeScroll>
-            {flatFiles.length === 0 ? (
+            {selectedFilePath ? (
+              <EditorHost>
+                <Editor
+                  path={selectedFilePath}
+                  language={selectedLanguage}
+                  theme={theme.mode === 'dark' ? 'vs-dark' : 'light'}
+                  value={content}
+                  onChange={(value) =>
+                    setFileContents((prev) => ({
+                      ...prev,
+                      [selectedFilePath]: value ?? '',
+                    }))
+                  }
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 13,
+                    lineNumbersMinChars: 3,
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    wordWrap: 'off',
+                  }}
+                />
+              </EditorHost>
+            ) : flatFiles.length === 0 ? (
               <p
                 style={{
                   padding: '1rem 0.85rem',
@@ -775,16 +868,16 @@ export function SubprojectFilesExplorer({
                 ou aguarde a geração pela CLI.
               </p>
             ) : (
-              <CodeTable>
-                <tbody>
-                  {lineRows.map((line, i) => (
-                    <tr key={i}>
-                      <LineNo>{i + 1}</LineNo>
-                      <LineCode>{line || ' '}</LineCode>
-                    </tr>
-                  ))}
-                </tbody>
-              </CodeTable>
+              <p
+                style={{
+                  padding: '1rem 0.85rem',
+                  fontSize: '0.82rem',
+                  lineHeight: 1.5,
+                  opacity: 0.85,
+                }}
+              >
+                Selecione um arquivo na árvore para visualizar e editar o conteúdo.
+              </p>
             )}
           </CodeScroll>
         </MainColumn>
