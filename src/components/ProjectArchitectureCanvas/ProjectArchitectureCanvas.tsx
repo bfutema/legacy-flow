@@ -102,9 +102,13 @@ function defaultKindVisibility(): Record<ArchitectureBlockKind, boolean> {
 function ArchitectureFlowWorkbench({
   projectId,
   projectName,
+  theaterMode,
+  onToggleTheater,
 }: {
   projectId: string
   projectName: string
+  theaterMode: boolean
+  onToggleTheater: () => void
 }) {
   const theme = useTheme()
   const navigate = useNavigate()
@@ -398,7 +402,7 @@ function ArchitectureFlowWorkbench({
 
   return (
     <>
-      <FlowHost ref={hostRef} className="architecture-flow-host">
+      <FlowHost ref={hostRef} className="architecture-flow-host" $theater={theaterMode}>
         <ReactFlow
           colorMode={colorMode}
           nodes={nodes}
@@ -430,6 +434,32 @@ function ArchitectureFlowWorkbench({
           <Panel position="top-left">
             <TopLeftPanel>
               <TopToolbarRow className="nodrag nopan">
+                <FsButton
+                  type="button"
+                  className="nodrag nopan"
+                  onClick={onToggleTheater}
+                  title={
+                    theaterMode
+                      ? 'Sair do modo teatro'
+                      : 'Ativar modo teatro (oculta título e expande o canvas)'
+                  }
+                  aria-label={theaterMode ? 'Sair do modo teatro' : 'Ativar modo teatro'}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden
+                  >
+                    <path d="M4 7h16M7 4v3M17 4v3M4 17h16M7 20v-3M17 20v-3" />
+                  </svg>
+                  <span className="fs-btn-label">
+                    {theaterMode ? 'Sair teatro' : 'Modo teatro'}
+                  </span>
+                </FsButton>
                 <FsButton
                   type="button"
                   className="nodrag nopan"
@@ -670,16 +700,18 @@ function ArchitectureFlowWorkbench({
           </Panel>
         </ReactFlow>
       </FlowHost>
-      <StatusStrip style={{ marginTop: '0.65rem' }}>
-        <span>
-          <StatusDot aria-hidden />
-          <StatusStrong>Arquitetura</StatusStrong> · {projectName}
-        </span>
-        <span>
-          {nodeCount} blocos visíveis · {edgeCount} ligações
-        </span>
-        <span>Salvo neste navegador (local)</span>
-      </StatusStrip>
+      {!theaterMode ? (
+        <StatusStrip style={{ marginTop: '0.65rem' }}>
+          <span>
+            <StatusDot aria-hidden />
+            <StatusStrong>Arquitetura</StatusStrong> · {projectName}
+          </span>
+          <span>
+            {nodeCount} blocos visíveis · {edgeCount} ligações
+          </span>
+          <span>Salvo neste navegador (local)</span>
+        </StatusStrip>
+      ) : null}
     </>
   )
 }
@@ -687,32 +719,40 @@ function ArchitectureFlowWorkbench({
 export type ProjectArchitectureCanvasProps = {
   projectId: string
   projectName: string
+  theaterMode?: boolean
+  onToggleTheater?: () => void
 }
 
 export function ProjectArchitectureCanvas({
   projectId,
   projectName,
+  theaterMode = false,
+  onToggleTheater,
 }: ProjectArchitectureCanvasProps) {
   return (
-    <PageShell>
-      <PersistHintBar>
-        <PersistHintText>
-          Documente serviços, filas e clientes. O layout é persistido por projeto neste
-          aparelho.
-        </PersistHintText>
-        <HelpInfoTooltip
-          ariaLabel="Ajuda: abrir arquivos e subprojetos"
-          tooltipId="architecture-page-files-help"
-        >
-          Duplo-clique em um bloco abre a visão de arquivos (estilo repositório); pela página
-          do projeto você escolhe o subprojeto antes de abrir a mesma tela.
-        </HelpInfoTooltip>
-      </PersistHintBar>
+    <PageShell $theater={theaterMode}>
+      {!theaterMode ? (
+        <PersistHintBar>
+          <PersistHintText>
+            Documente serviços, filas e clientes. O layout é persistido por projeto neste
+            aparelho.
+          </PersistHintText>
+          <HelpInfoTooltip
+            ariaLabel="Ajuda: abrir arquivos e subprojetos"
+            tooltipId="architecture-page-files-help"
+          >
+            Duplo-clique em um bloco abre a visão de arquivos (estilo repositório); pela página
+            do projeto você escolhe o subprojeto antes de abrir a mesma tela.
+          </HelpInfoTooltip>
+        </PersistHintBar>
+      ) : null}
       <ReactFlowProvider>
         <ArchitectureFlowWorkbench
           key={projectId}
           projectId={projectId}
           projectName={projectName}
+          theaterMode={theaterMode}
+          onToggleTheater={onToggleTheater ?? (() => undefined)}
         />
       </ReactFlowProvider>
     </PageShell>

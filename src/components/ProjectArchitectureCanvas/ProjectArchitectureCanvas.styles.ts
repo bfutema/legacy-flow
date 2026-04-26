@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import styled, { keyframes } from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
 import { ADMIN_MOBILE_MEDIA } from '../../layouts/adminShellTokens'
 
 const fadeUp = keyframes`
@@ -26,14 +26,33 @@ const canvasReveal = keyframes`
 
 const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
-export const PageShell = styled.div`
+export const PageShell = styled.div<{ $theater?: boolean }>`
   width: 100%;
+  ${({ $theater }) =>
+    $theater
+      ? css`
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-height: 0;
+          overflow: hidden;
+        `
+      : ''}
 
   & > * {
     @media (prefers-reduced-motion: no-preference) {
       animation: ${fadeUp} 0.48s ${easeOut} both;
     }
   }
+
+  ${({ $theater }) =>
+    $theater
+      ? css`
+          & > * {
+            animation: none !important;
+          }
+        `
+      : ''}
 
   & > *:nth-child(1) {
     animation-delay: 0.02s;
@@ -53,7 +72,7 @@ export const PageShell = styled.div`
   }
 `
 
-export const FlowHost = styled.div`
+export const FlowHost = styled.div<{ $theater?: boolean }>`
   position: relative;
   z-index: 1;
   width: 100%;
@@ -133,6 +152,19 @@ export const FlowHost = styled.div`
       transform-origin: bottom left;
     }
   }
+
+  ${({ $theater }) =>
+    $theater
+      ? css`
+          flex: 1;
+          min-height: 0;
+          height: 100%;
+          border-radius: 0;
+          border-left: none;
+          border-right: none;
+          border-bottom: none;
+        `
+      : ''}
 `
 
 export const StatusStrip = styled.div`

@@ -11,6 +11,7 @@ import {
 export function ProjectArchitecture() {
   const { projectId } = useParams<{ projectId: string }>()
   const [metaTick, setMetaTick] = useState(0)
+  const [theaterMode, setTheaterMode] = useState(false)
 
   useEffect(() => {
     const onMeta = () => setMetaTick((n) => n + 1)
@@ -34,13 +35,17 @@ export function ProjectArchitecture() {
   }
 
   return (
-    <ModelingPageRoot>
-      <BackLink to={`/projects/${project.id}`}>← Voltar ao projeto</BackLink>
-      <PageTitle>Arquitetura — {project.name}</PageTitle>
+    <ModelingPageRoot $theater={theaterMode}>
+      {!theaterMode ? (
+        <BackLink to={`/projects/${project.id}`}>← Voltar ao projeto</BackLink>
+      ) : null}
+      {!theaterMode ? <PageTitle>Arquitetura — {project.name}</PageTitle> : null}
       <ProjectArchitectureCanvas
         key={project.id}
         projectId={project.id}
         projectName={project.name}
+        theaterMode={theaterMode}
+        onToggleTheater={() => setTheaterMode((v) => !v)}
       />
     </ModelingPageRoot>
   )

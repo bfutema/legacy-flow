@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import styled, { css, keyframes } from 'styled-components'
-import { ADMIN_MOBILE_MEDIA } from '../layouts/adminShellTokens'
+import {
+  ADMIN_CONTENT_GUTTER_X,
+  ADMIN_HEADER_BAR_HEIGHT,
+  ADMIN_MOBILE_MEDIA,
+} from '../layouts/adminShellTokens'
 
 const fadeUp = keyframes`
   from {
@@ -49,10 +53,31 @@ const panelFromRight = keyframes`
 const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 /** Cabeçalho + canvas: filhos diretos na ordem de DatabaseModeling.tsx */
-export const ModelingPageRoot = styled.div`
+export const ModelingPageRoot = styled.div<{ $theater?: boolean }>`
+  ${({ $theater }) =>
+    $theater
+      ? css`
+          margin: -1.5rem calc(-1 * ${ADMIN_CONTENT_GUTTER_X}) -2.5rem;
+          height: calc(100dvh - ${ADMIN_HEADER_BAR_HEIGHT});
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+
+          @media ${ADMIN_MOBILE_MEDIA} {
+            margin: -1.5rem calc(-1 * ${ADMIN_CONTENT_GUTTER_X}) -2.5rem;
+            height: calc(100dvh - ${ADMIN_HEADER_BAR_HEIGHT});
+          }
+        `
+      : ''}
+
   @media ${ADMIN_MOBILE_MEDIA} {
-    padding: 0 clamp(0.5rem, 2.5vw, 0.85rem);
-    box-sizing: border-box;
+    ${({ $theater }) =>
+      $theater
+        ? ''
+        : css`
+            padding: 0 clamp(0.5rem, 2.5vw, 0.85rem);
+            box-sizing: border-box;
+          `}
   }
 
   & > * {
@@ -60,6 +85,15 @@ export const ModelingPageRoot = styled.div`
       animation: ${fadeUp} 0.5s ${easeOut} both;
     }
   }
+
+  ${({ $theater }) =>
+    $theater
+      ? css`
+          & > * {
+            animation: none !important;
+          }
+        `
+      : ''}
 
   & > *:nth-child(1) {
     animation-delay: 0.02s;
@@ -121,7 +155,7 @@ export const FlowPersistHint = styled.p`
   }
 `
 
-export const FlowHost = styled.div`
+export const FlowHost = styled.div<{ $theater?: boolean }>`
   width: 100%;
   height: clamp(420px, calc(100vh - 14rem), 820px);
   height: clamp(420px, calc(100dvh - 14rem), 820px);
@@ -219,6 +253,19 @@ export const FlowHost = styled.div`
       right: 0.45rem;
     }
   }
+
+  ${({ $theater }) =>
+    $theater
+      ? css`
+          flex: 1;
+          min-height: 0;
+          height: 100%;
+          border-radius: 0;
+          border-left: none;
+          border-right: none;
+          border-bottom: none;
+        `
+      : ''}
 
   /* Reforço no dark: ícones e fundo dos botões (colorMode dark já aplica a classe .dark) */
   .react-flow.dark .react-flow__controls {

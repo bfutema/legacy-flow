@@ -146,10 +146,14 @@ function DatabaseFlowCanvas({
   projectId,
   projectPrimaryColor,
   sqlEngine,
+  theaterMode,
+  onToggleTheater,
 }: {
   projectId: string
   projectPrimaryColor: string
   sqlEngine: string
+  theaterMode: boolean
+  onToggleTheater: () => void
 }) {
   const { confirm } = useConfirmDialog()
   const theme = useTheme()
@@ -246,11 +250,11 @@ function DatabaseFlowCanvas({
     return [...set].sort((a, b) => a.localeCompare(b))
   }, [nodes])
 
-  useEffect(() => {
-    if (schemaFilter === ALL_SCHEMAS_FILTER) return
-    if (!schemaOptions.includes(schemaFilter)) {
-      setSchemaFilter(ALL_SCHEMAS_FILTER)
-    }
+  const effectiveSchemaFilter = useMemo(() => {
+    if (schemaFilter === ALL_SCHEMAS_FILTER) return ALL_SCHEMAS_FILTER
+    return schemaOptions.includes(schemaFilter)
+      ? schemaFilter
+      : ALL_SCHEMAS_FILTER
   }, [schemaFilter, schemaOptions])
 
   useEffect(() => {
@@ -478,14 +482,14 @@ function DatabaseFlowCanvas({
   )
 
   const nodesForView = useMemo(() => {
-    if (schemaFilter === ALL_SCHEMAS_FILTER) return nodes
+    if (effectiveSchemaFilter === ALL_SCHEMAS_FILTER) return nodes
     return nodes.filter((n) => {
       if (n.type !== 'table') return true
       const d = n.data as TableNodeData
       const schema = d.schemaName?.trim() ?? ''
-      return schema === schemaFilter
+      return schema === effectiveSchemaFilter
     })
-  }, [nodes, schemaFilter])
+  }, [nodes, effectiveSchemaFilter])
 
   const visibleNodeIds = useMemo(
     () => new Set(nodesForView.map((n) => n.id)),
@@ -580,7 +584,7 @@ function DatabaseFlowCanvas({
   }, [confirm, projectId, setEdges, setNodes])
 
   return (
-    <FlowHost ref={hostRef}>
+    <FlowHost ref={hostRef} $theater={theaterMode}>
       <ReactFlow
         colorMode={colorMode}
         onInit={(inst) => {
@@ -674,7 +678,7 @@ function DatabaseFlowCanvas({
             <SchemaFilterWrap className="nodrag nopan">
               <SchemaFilterLabel>{namespaceLabel}</SchemaFilterLabel>
               <SchemaFilterSelect
-                value={schemaFilter}
+                  value={effectiveSchemaFilter}
                 onChange={(e) => setSchemaFilter(e.target.value)}
                 aria-label="Filtrar tabelas por schema"
               >
@@ -726,6 +730,48 @@ function DatabaseFlowCanvas({
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 <span className="fs-btn-label">Nova tabela</span>
+              </FsButton>
+              <FsButton
+                type="button"
+                onClick={onToggleTheater}
+                title={
+                  theaterMode
+                    ? 'Sair do modo teatro'
+                    : 'Ativar modo teatro (oculta título e preenche o conteúdo)'
+                }
+                aria-label={theaterMode ? 'Sair do modo teatro' : 'Ativar modo teatro'}
+              >
+                {theaterMode ? (
+                  <>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M4 7h16M7 4v3M17 4v3M4 17h16M7 20v-3M17 20v-3" />
+                    </svg>
+                    <span className="fs-btn-label">Sair teatro</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M4 7h16M7 4v3M17 4v3M4 17h16M7 20v-3M17 20v-3" />
+                    </svg>
+                    <span className="fs-btn-label">Modo teatro</span>
+                  </>
+                )}
               </FsButton>
               <FsButton
                 type="button"
@@ -941,6 +987,7 @@ export function DatabaseModeling() {
   )
   const { primaryDatabase } = useProjectPrimaryDatabase(projectId)
   const { primaryColor } = useProjectPrimaryColor(projectId)
+  const [theaterMode, setTheaterMode] = useState(false)
 
   if (!projectId) {
     return <Navigate to="/projects" replace />
@@ -952,18 +999,24 @@ export function DatabaseModeling() {
 
   return (
     <ModelingDatabaseProvider engine={primaryDatabase} primaryColor={primaryColor}>
-      <ModelingPageRoot>
-        <BackLink to={`/projects/${project.id}`}>← Voltar ao projeto</BackLink>
-        <PageTitle>Modelagem — {project.name}</PageTitle>
-        <FlowPersistHint>
-          O diagrama é salvo automaticamente neste navegador ao mover tabelas, editar
-          campos ou relações.
-        </FlowPersistHint>
+      <ModelingPageRoot $theater={theaterMode}>
+        {!theaterMode ? (
+          <BackLink to={`/projects/${project.id}`}>← Voltar ao projeto</BackLink>
+        ) : null}
+        {!theaterMode ? <PageTitle>Modelagem — {project.name}</PageTitle> : null}
+        {!theaterMode ? (
+          <FlowPersistHint>
+            O diagrama é salvo automaticamente neste navegador ao mover tabelas, editar
+            campos ou relações.
+          </FlowPersistHint>
+        ) : null}
         <DatabaseFlowCanvas
           key={project.id}
           projectId={project.id}
           projectPrimaryColor={primaryColor}
           sqlEngine={primaryDatabase}
+          theaterMode={theaterMode}
+          onToggleTheater={() => setTheaterMode((v) => !v)}
         />
       </ModelingPageRoot>
     </ModelingDatabaseProvider>
