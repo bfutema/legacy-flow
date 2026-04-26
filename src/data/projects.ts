@@ -14,6 +14,7 @@ import {
   saveUserProjects,
   type NewProjectInput,
 } from '../persistence/userProjectsStorage'
+import { workspaceFilesStorageKey } from '../persistence/workspaceFilesStorage'
 
 /** Cor de marca do projeto (hex). Usada no header dos nós de tabela na modelagem. */
 export const DEFAULT_PROJECT_PRIMARY_COLOR = '#3b82f6'
@@ -117,6 +118,10 @@ export function getAllProjects(): Project[] {
 const primaryDbStorageKey = (projectId: string) => `flow-primary-db:${projectId}`
 const primaryColorStorageKey = (projectId: string) =>
   `flow-project-primary-color:${projectId}`
+const projectMonorepoStorageKey = (projectId: string) =>
+  `flow-project-monorepo:${projectId}`
+const subprojectFilesKeyPrefix = (projectId: string) =>
+  `flow-subproject-files:v1:${projectId}:`
 
 function purgeProjectLocalPersistence(projectId: string): void {
   removeProjectMetadata(projectId)
@@ -125,6 +130,13 @@ function purgeProjectLocalPersistence(projectId: string): void {
   try {
     localStorage.removeItem(primaryDbStorageKey(projectId))
     localStorage.removeItem(primaryColorStorageKey(projectId))
+    localStorage.removeItem(projectMonorepoStorageKey(projectId))
+    localStorage.removeItem(workspaceFilesStorageKey(projectId))
+    const subPrefix = subprojectFilesKeyPrefix(projectId)
+    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+      const k = localStorage.key(i)
+      if (k?.startsWith(subPrefix)) localStorage.removeItem(k)
+    }
   } catch (err) {
     console.warn('[projeto] Não foi possível limpar chaves locais:', err)
   }

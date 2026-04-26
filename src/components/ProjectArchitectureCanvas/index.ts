@@ -4,4 +4,5 @@ export type {
   ArchitectureBlockKind,
   ArchitectureBlockNodeData,
   ArchitectureEdgeData,
+  ArchitectureMonorepoRole,
 } from './architectureTypes'

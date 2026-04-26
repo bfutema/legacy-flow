@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { resolveProjectById } from '../../data/projects'
 import { isProjectMonorepo } from '../../hooks/useProjectMonorepo'
-import { findArchitectureBlock } from './architectureBlocksLoader'
+import {
+  buildWorkspaceSeedPaths,
+  workspaceFolderPrefixForNode,
+} from './workspaceSeedPaths'
+import {
+  findArchitectureBlock,
+  listArchitectureBlocks,
+} from './architectureBlocksLoader'
 import { SubprojectFilesExplorer } from './SubprojectFilesExplorer'
 import {
   BackLinkStyled,
@@ -11,10 +18,12 @@ import {
 } from './SubprojectFilesLayout.styles'
 import { ModelingPageRoot } from '../DatabaseModeling.styles'
 
-const THEATER_STORAGE_KEY = 'flow-theater-mode:subproject-files'
+const THEATER_STORAGE_KEY = 'flow-theater-mode:workspace-files'
 
-export function SubprojectFilesViewPage() {
-  const { projectId, nodeId } = useParams<{ projectId: string; nodeId: string }>()
+export function WorkspaceFilesPage() {
+  const { projectId } = useParams<{ projectId: string }>()
+  const [searchParams] = useSearchParams()
+  const focusId = searchParams.get('focus') ?? undefined
   const [refreshTick, setRefreshTick] = useState(0)
   const [theaterMode, setTheaterMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
@@ -41,11 +50,23 @@ export function SubprojectFilesViewPage() {
     [projectId, refreshTick],
   )
 
-  const block = useMemo(
+  const blocks = useMemo(
+    () => (projectId ? listArchitectureBlocks(projectId) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projectId, refreshTick],
+  )
+
+  const seedPaths = useMemo(() => buildWorkspaceSeedPaths(blocks), [blocks])
+
+  const focusBlock = useMemo(
     () =>
-      projectId && nodeId ? findArchitectureBlock(projectId, nodeId) : undefined,
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshTick invalida ao mudar diagrama
-    [projectId, nodeId, refreshTick],
+      projectId && focusId ? findArchitectureBlock(projectId, focusId) : undefined,
+    [projectId, focusId, refreshTick],
+  )
+
+  const focusPrefix = useMemo(
+    () => workspaceFolderPrefixForNode(focusBlock) || undefined,
+    [focusBlock],
   )
 
   if (!projectId) {
@@ -56,12 +77,7 @@ export function SubprojectFilesViewPage() {
     return <Navigate to="/projects" replace />
   }
 
-  if (isProjectMonorepo(projectId)) {
-    const q = nodeId ? `?focus=${encodeURIComponent(nodeId)}` : ''
-    return <Navigate to={`/projects/${projectId}/workspace-files${q}`} replace />
-  }
-
-  if (!nodeId || !block) {
+  if (!isProjectMonorepo(projectId)) {
     return <Navigate to={`/projects/${projectId}/subproject-files`} replace />
   }
 
@@ -69,22 +85,20 @@ export function SubprojectFilesViewPage() {
     <ModelingPageRoot $theater={theaterMode}>
       {!theaterMode ? (
         <>
-          <BackLinkStyled to={`/projects/${project.id}/subproject-files`}>
-            ← Todos os subprojetos
-          </BackLinkStyled>
-          <PageTitle>{block.data.label}</PageTitle>
+          <BackLinkStyled to={`/projects/${project.id}`}>← Voltar ao projeto</BackLinkStyled>
+          <PageTitle>Explorador de arquivos</PageTitle>
           <PageDesc>
-            {block.data.slug ? `Slug: ${block.data.slug} · ` : null}
-            Visualização estilo repositório (preview). Duplo-clique em um bloco no diagrama de
-            arquitetura também abre esta tela.
+            Visão única do monorepo (pastas apps/ e packages/), alinhada aos blocos do mapa de
+            arquitetura. Preview local até integrar o gerador.
           </PageDesc>
         </>
       ) : null}
       <SubprojectFilesExplorer
-        variant="block"
+        variant="workspace"
         projectId={project.id}
         projectName={project.name}
-        block={block}
+        seedPaths={seedPaths}
+        focusPrefix={focusPrefix}
         theaterMode={theaterMode}
         onToggleTheater={() => setTheaterMode((v) => !v)}
       />

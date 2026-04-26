@@ -7,6 +7,7 @@ import {
   techLabel,
 } from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import { resolveProjectById } from '../../data/projects'
+import { isProjectMonorepo } from '../../hooks/useProjectMonorepo'
 import { useProjectPrimaryDatabase } from '../../hooks/useProjectPrimaryDatabase'
 import { getEffectiveProjectPrimaryColor } from '../../hooks/useProjectPrimaryColor'
 import { useProjectCloud } from '../../hooks/useProjectCloud'
@@ -57,6 +58,10 @@ export function SubprojectFilesHubPage() {
 
   if (!project) {
     return <Navigate to="/projects" replace />
+  }
+
+  if (isProjectMonorepo(projectId)) {
+    return <Navigate to={`/projects/${projectId}/workspace-files`} replace />
   }
 
   const projectAccent = getEffectiveProjectPrimaryColor(project)

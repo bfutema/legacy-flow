@@ -31,6 +31,8 @@ import { useTheme } from 'styled-components'
 import { PROJECT_CLOUD_LABELS } from '../../data/cloudProviders'
 import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { useProjectPrimaryDatabase } from '../../hooks/useProjectPrimaryDatabase'
+import { defaultMonorepoRoleForKind } from '../../pages/subprojectFiles/workspaceSeedPaths'
+import { ArchitectureLayoutContext } from './ArchitectureLayoutContext'
 import { FsButton } from '../../pages/DatabaseModeling.styles'
 import {
   ARCH_CLIENT_SURFACES,
@@ -106,10 +108,12 @@ function ArchitectureFlowWorkbench({
   projectId,
   theaterMode,
   onToggleTheater,
+  isMonorepo,
 }: {
   projectId: string
   theaterMode: boolean
   onToggleTheater: () => void
+  isMonorepo: boolean
 }) {
   const theme = useTheme()
   const navigate = useNavigate()
@@ -329,9 +333,15 @@ function ArchitectureFlowWorkbench({
       if (node.type !== 'architectureBlock') return
       const data = node.data as ArchitectureBlockNodeData
       if (data.kind === 'database') return
-      navigate(`/projects/${projectId}/subproject-files/${node.id}`)
+      if (isMonorepo) {
+        navigate(
+          `/projects/${projectId}/workspace-files?focus=${encodeURIComponent(node.id)}`,
+        )
+      } else {
+        navigate(`/projects/${projectId}/subproject-files/${node.id}`)
+      }
     },
-    [navigate, projectId],
+    [isMonorepo, navigate, projectId],
   )
 
   useEffect(() => {
@@ -367,6 +377,7 @@ function ArchitectureFlowWorkbench({
           runtime,
           techHint: runtime ? techLabel(runtime) : '',
           slug: `${kind}-${id.slice(-6)}`,
+          monorepoRole: defaultMonorepoRoleForKind(kind),
           generatedPaths:
             kind === 'queue'
               ? []
@@ -465,6 +476,23 @@ function ArchitectureFlowWorkbench({
               ...data,
               slug: slug.trimStart(),
             },
+          }
+        }),
+      )
+    },
+    [selectedNodeId, setNodes],
+  )
+
+  const updateSelectedMonorepoRole = useCallback(
+    (monorepoRole: ArchitectureBlockNodeData['monorepoRole']) => {
+      if (!selectedNodeId || !monorepoRole) return
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== selectedNodeId || n.type !== 'architectureBlock') return n
+          const data = n.data as ArchitectureBlockNodeData
+          return {
+            ...n,
+            data: { ...data, monorepoRole },
           }
         }),
       )
@@ -719,6 +747,29 @@ function ArchitectureFlowWorkbench({
                 />
               </RailSection>
             ) : null}
+            {selectedBlockData && isMonorepo && selectedBlockData.kind !== 'database' ? (
+              <RailSection>
+                <RailTitle>Pasta no monorepo</RailTitle>
+                <InlineLabel htmlFor="arch-monorepo-role-select">
+                  Raiz apps/ ou packages/
+                </InlineLabel>
+                <SmallSelect
+                  id="arch-monorepo-role-select"
+                  value={
+                    selectedBlockData.monorepoRole ??
+                    defaultMonorepoRoleForKind(selectedBlockData.kind)
+                  }
+                  onChange={(e) =>
+                    updateSelectedMonorepoRole(
+                      e.target.value as ArchitectureBlockNodeData['monorepoRole'],
+                    )
+                  }
+                >
+                  <option value="app">Aplicação (apps/)</option>
+                  <option value="package">Pacote (packages/)</option>
+                </SmallSelect>
+              </RailSection>
+            ) : null}
             {selectedBlockData &&
             ['client', 'service', 'queue', 'database'].includes(selectedBlockData.kind) ? (
               <RailSection>
@@ -794,23 +845,29 @@ export type ProjectArchitectureCanvasProps = {
   projectId: string
   theaterMode?: boolean
   onToggleTheater?: () => void
+  /** Padrão true: layout monorepo. */
+  isMonorepo?: boolean
 }
 
 export function ProjectArchitectureCanvas({
   projectId,
   theaterMode = false,
   onToggleTheater,
+  isMonorepo = true,
 }: ProjectArchitectureCanvasProps) {
   return (
-    <PageShell $theater={theaterMode}>
-      <ReactFlowProvider>
-        <ArchitectureFlowWorkbench
-          key={projectId}
-          projectId={projectId}
-          theaterMode={theaterMode}
-          onToggleTheater={onToggleTheater ?? (() => undefined)}
-        />
-      </ReactFlowProvider>
-    </PageShell>
+    <ArchitectureLayoutContext.Provider value={{ isMonorepo }}>
+      <PageShell $theater={theaterMode}>
+        <ReactFlowProvider>
+          <ArchitectureFlowWorkbench
+            key={projectId}
+            projectId={projectId}
+            theaterMode={theaterMode}
+            onToggleTheater={onToggleTheater ?? (() => undefined)}
+            isMonorepo={isMonorepo}
+          />
+        </ReactFlowProvider>
+      </PageShell>
+    </ArchitectureLayoutContext.Provider>
   )
 }

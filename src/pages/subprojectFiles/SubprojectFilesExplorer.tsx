@@ -17,6 +17,7 @@ import {
   techLabel,
 } from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import type { ArchitectureBlockSummary } from './architectureBlocksLoader'
+import { workspaceFilesStorageKey } from '../../persistence/workspaceFilesStorage'
 import { useThemeMode } from '../../contexts/ThemeContext'
 import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { useProjectPrimaryDatabase } from '../../hooks/useProjectPrimaryDatabase'
@@ -59,6 +60,7 @@ import {
 } from './SubprojectFilesLayout.styles'
 
 const EXPLORER_STORAGE_VERSION = 'v1'
+const NO_PATHS_FALLBACK: string[] = []
 const MONACO_EDITOR_THEME_STORAGE_KEY = `flow-monaco-editor-theme:${EXPLORER_STORAGE_VERSION}`
 const DRACULA_DARK_THEME = 'flow-dracula-dark'
 const FLOW_DARK_THEME = 'flow-app-dark'
@@ -434,21 +436,36 @@ const FileTree = memo(function FileTree({
   )
 })
 
-type Props = {
-  projectId: string
-  projectName: string
+type ExplorerVariantBlock = {
+  variant: 'block'
   block: ArchitectureBlockSummary
-  theaterMode: boolean
-  onToggleTheater: () => void
 }
 
-export function SubprojectFilesExplorer({
-  projectId,
-  projectName,
-  block,
-  theaterMode,
-  onToggleTheater,
-}: Props) {
+type ExplorerVariantWorkspace = {
+  variant: 'workspace'
+  seedPaths: string[]
+  /** Ex.: `apps/web/` — expande árvore e foca primeiro arquivo ao abrir */
+  focusPrefix?: string
+}
+
+export type SubprojectFilesExplorerProps = {
+  projectId: string
+  projectName: string
+  theaterMode: boolean
+  onToggleTheater: () => void
+} & (ExplorerVariantBlock | ExplorerVariantWorkspace)
+
+export function SubprojectFilesExplorer(props: SubprojectFilesExplorerProps) {
+  const { projectId, projectName, theaterMode, onToggleTheater, variant } = props
+  const block = props.variant === 'block' ? props.block : undefined
+  const seedPaths = props.variant === 'workspace' ? props.seedPaths : []
+  const focusPrefix = props.variant === 'workspace' ? props.focusPrefix : undefined
+
+  const persistKey =
+    variant === 'block'
+      ? storageKey(projectId, block!.nodeId)
+      : workspaceFilesStorageKey(projectId)
+
   const { mode } = useThemeMode()
   const shellRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -469,9 +486,27 @@ export function SubprojectFilesExplorer({
   const [pendingDelete, setPendingDelete] = useState<{ path: string; file: boolean } | null>(null)
   const [editingPath, setEditingPath] = useState<string | null>(null)
   const [editingDraft, setEditingDraft] = useState('')
+  const focusAppliedRef = useRef<string>('')
+
+  const fallbackPaths = useMemo((): string[] => {
+    if (variant === 'block') {
+      const g = block!.data.generatedPaths
+      return g?.length ? g : NO_PATHS_FALLBACK
+    }
+    return seedPaths
+  }, [variant, block, seedPaths])
 
   useEffect(() => {
-    const raw = localStorage.getItem(storageKey(projectId, block.nodeId))
+    setStorageReady(false)
+    focusAppliedRef.current = ''
+  }, [persistKey])
+
+  useEffect(() => {
+    focusAppliedRef.current = ''
+  }, [focusPrefix])
+
+  useEffect(() => {
+    const raw = localStorage.getItem(persistKey)
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as ExplorerLocalState
@@ -490,7 +525,7 @@ export function SubprojectFilesExplorer({
         // fallback para seed inicial abaixo
       }
     }
-    setPaths(block.data.generatedPaths ?? [])
+    setPaths(fallbackPaths)
     setFileContents({})
     setLastOpenedFilePath('')
     setSelectedPath('')
@@ -498,7 +533,7 @@ export function SubprojectFilesExplorer({
     setTreeQuery('')
     setExpandedFolders(new Set())
     setStorageReady(true)
-  }, [block.data.generatedPaths, block.nodeId, projectId])
+  }, [persistKey, fallbackPaths])
 
   useEffect(() => {
     if (!storageReady) return
@@ -511,13 +546,12 @@ export function SubprojectFilesExplorer({
       treeQuery,
       expandedFolders: [...expandedFolders],
     }
-    localStorage.setItem(storageKey(projectId, block.nodeId), JSON.stringify(payload))
+    localStorage.setItem(persistKey, JSON.stringify(payload))
   }, [
     paths,
     fileContents,
     lastOpenedFilePath,
-    projectId,
-    block.nodeId,
+    persistKey,
     selectedPath,
     selectedIsFile,
     treeQuery,
@@ -547,6 +581,29 @@ export function SubprojectFilesExplorer({
     }
     return collect(tree)
   }, [tree])
+
+  useEffect(() => {
+    if (!storageReady || variant !== 'workspace' || !focusPrefix?.trim()) return
+    if (flatFiles.length === 0) return
+    const key = focusPrefix.trim()
+    if (focusAppliedRef.current === key) return
+    const norm = normalizePathInput(key.replace(/\/$/, ''))
+    const segments = norm.split('/').filter(Boolean)
+    const expanded: string[] = []
+    for (let i = 0; i < segments.length; i += 1) {
+      expanded.push(segments.slice(0, i + 1).join('/'))
+    }
+    setExpandedFolders((prev) => new Set([...prev, ...expanded]))
+    const prefixSlash = norm ? `${norm}/` : ''
+    const first =
+      flatFiles.find((f) => f.startsWith(prefixSlash)) ?? flatFiles.find((f) => f === norm)
+    if (first) {
+      setSelectedPath(first)
+      setSelectedIsFile(true)
+      setLastOpenedFilePath(first)
+    }
+    focusAppliedRef.current = key
+  }, [storageReady, variant, focusPrefix, flatFiles])
 
   const filteredTree = useMemo(
     () => filterTree(tree, treeQuery),
@@ -592,26 +649,27 @@ export function SubprojectFilesExplorer({
 
   const blockTech = useMemo(
     () =>
-      normalizeTechForNode(
-        block.data.kind,
-        block.data.runtime,
-        block.data.techHint,
-        block.data.projectCloud ?? projectCloud,
-        block.data.projectPrimaryDatabase ?? primaryDatabase,
-        block.data.clientSurface,
-      ),
+      variant === 'block'
+        ? normalizeTechForNode(
+            block!.data.kind,
+            block!.data.runtime,
+            block!.data.techHint,
+            block!.data.projectCloud ?? projectCloud,
+            block!.data.projectPrimaryDatabase ?? primaryDatabase,
+            block!.data.clientSurface,
+          )
+        : undefined,
     [
-      block.data.kind,
-      block.data.projectCloud,
-      block.data.projectPrimaryDatabase,
-      block.data.runtime,
-      block.data.techHint,
-      block.data.clientSurface,
+      variant,
+      block,
       projectCloud,
       primaryDatabase,
     ],
   )
-  const blockTechLabel = useMemo(() => techLabel(blockTech), [blockTech])
+  const blockTechLabel = useMemo(
+    () => (blockTech ? techLabel(blockTech) : ''),
+    [blockTech],
+  )
 
   const onPick = useCallback((path: string, file: boolean) => {
     setSelectedPath(path)
@@ -829,10 +887,23 @@ export function SubprojectFilesExplorer({
 
   const crumbs = useMemo(() => {
     const root = projectName
-    const slug = block.data.slug ?? block.data.label
     const segs = selectedPath ? selectedPath.split('/').filter(Boolean) : []
-    return { root, slug, segs }
-  }, [projectName, block.data.slug, block.data.label, selectedPath])
+    if (variant === 'block') {
+      const slug = block!.data.slug ?? block!.data.label
+      return {
+        root,
+        midLabel: slug,
+        midTo: `/projects/${projectId}/subproject-files`,
+        segs,
+      }
+    }
+    return {
+      root,
+      midLabel: 'Workspace',
+      midTo: `/projects/${projectId}/workspace-files`,
+      segs,
+    }
+  }, [variant, projectName, projectId, block, selectedPath])
 
   return (
     <PageRoot $theater={theaterMode}>
@@ -945,7 +1016,7 @@ export function SubprojectFilesExplorer({
           <BreadcrumbBar aria-label="Caminho do arquivo">
             <CrumbLink to={`/projects/${projectId}`}>{crumbs.root}</CrumbLink>
             <CrumbSep>/</CrumbSep>
-            <CrumbLink to={`/projects/${projectId}/subproject-files`}>{crumbs.slug}</CrumbLink>
+            <CrumbLink to={crumbs.midTo}>{crumbs.midLabel}</CrumbLink>
             {crumbs.segs.map((seg, i) => {
               const isLast = i === crumbs.segs.length - 1
               return (
@@ -969,20 +1040,27 @@ export function SubprojectFilesExplorer({
           <MetaBar>
             <span>
               <strong style={{ color: 'inherit' }}>Preview local</strong> ·{' '}
-              {content.split('\n').length} linhas · {ARCHITECTURE_KIND_LABEL[block.data.kind]}
-              {blockTechLabel ? (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.28rem',
-                    marginLeft: '0.45rem',
-                  }}
-                >
-                  {renderTechIcon(blockTech, 13)}
-                  {blockTechLabel}
-                </span>
-              ) : null}
+              {content.split('\n').length} linhas ·{' '}
+              {variant === 'block' ? (
+                <>
+                  {ARCHITECTURE_KIND_LABEL[block!.data.kind]}
+                  {blockTech && blockTechLabel ? (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.28rem',
+                        marginLeft: '0.45rem',
+                      }}
+                    >
+                      {renderTechIcon(blockTech, 13)}
+                      {blockTechLabel}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <>Monorepo · árvore única (apps/ e packages/)</>
+              )}
             </span>
           </MetaBar>
           <TabRow>
@@ -1023,8 +1101,9 @@ export function SubprojectFilesExplorer({
                   opacity: 0.85,
                 }}
               >
-                Este bloco ainda não tem caminhos de exemplo. Edite-o no diagrama de arquitetura
-                ou aguarde a geração pela CLI.
+                {variant === 'block'
+                  ? 'Este bloco ainda não tem caminhos de exemplo. Edite-o no diagrama de arquitetura ou aguarde a geração pela CLI.'
+                  : 'O workspace ainda não tem caminhos. Adicione blocos no mapa de arquitetura ou crie pastas aqui.'}
               </p>
             ) : (
               <p

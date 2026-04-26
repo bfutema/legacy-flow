@@ -13,6 +13,7 @@ import { ProjectArchitecture } from './pages/ProjectArchitecture'
 import { ProjectDetail } from './pages/ProjectDetail'
 import { SubprojectFilesHubPage } from './pages/subprojectFiles/SubprojectFilesHubPage'
 import { SubprojectFilesViewPage } from './pages/subprojectFiles/SubprojectFilesViewPage'
+import { WorkspaceFilesPage } from './pages/subprojectFiles/WorkspaceFilesPage'
 import { Projects } from './pages/Projects'
 import { Allocations } from './pages/Allocations'
 import { OrganogramPage } from './pages/OrganogramPage'
@@ -124,6 +125,14 @@ export default function App() {
                 element={
                   <RequireAbility I="read" a="Project">
                     <SubprojectFilesHubPage />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/:projectId/workspace-files"
+                element={
+                  <RequireAbility I="read" a="Project">
+                    <WorkspaceFilesPage />
                   </RequireAbility>
                 }
               />

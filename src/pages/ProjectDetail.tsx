@@ -34,6 +34,7 @@ import { createDemoArchitectureNodes } from '../components/ProjectArchitectureCa
 import { deleteProject, resolveProjectById } from '../data/projects'
 import { useModelingDiagramStats } from '../hooks/useModelingDiagramStats'
 import { useProjectCloud } from '../hooks/useProjectCloud'
+import { useProjectMonorepo } from '../hooks/useProjectMonorepo'
 import { useProjectPrimaryDatabase } from '../hooks/useProjectPrimaryDatabase'
 import { loadArchitectureFlow } from '../persistence/architectureFlowStorage'
 import { HelpInfoTooltip } from '../components/HelpInfoTooltip/HelpInfoTooltip'
@@ -149,6 +150,7 @@ export function ProjectDetail() {
   const { primaryDatabase, setPrimaryDatabase } =
     useProjectPrimaryDatabase(projectId)
   const { projectCloud, setProjectCloud } = useProjectCloud(projectId)
+  const { isMonorepo, setMultiRepoLayout } = useProjectMonorepo(projectId)
   const { tableCount, relationCount } = useModelingDiagramStats(projectId)
 
   const chartData = useMemo(
@@ -409,6 +411,32 @@ export function ProjectDetail() {
                 </DbSelect>
               </PanelDbSettingRow>
             </div>
+            <div>
+              <PanelSectionLabel>Estrutura do código</PanelSectionLabel>
+              <PanelDbSettingRow>
+                <DbLabelRow>
+                  <DbLabelInRow htmlFor="project-repo-layout">
+                    Monorepo ou repositórios separados
+                  </DbLabelInRow>
+                  <HelpInfoTooltip
+                    ariaLabel="Ajuda: layout do repositório"
+                    tooltipId="project-repo-layout-tip"
+                  >
+                    Monorepo (padrão): um explorador com pastas apps/ e packages/. Repositórios
+                    separados: um cartão por bloco, como projetos distintos.
+                  </HelpInfoTooltip>
+                </DbLabelRow>
+                <DbSelect
+                  id="project-repo-layout"
+                  value={isMonorepo ? 'monorepo' : 'multi'}
+                  disabled={!canUpdateProject}
+                  onChange={(e) => setMultiRepoLayout(e.target.value === 'multi')}
+                >
+                  <option value="monorepo">Monorepo (padrão)</option>
+                  <option value="multi">Repositórios separados</option>
+                </DbSelect>
+              </PanelDbSettingRow>
+            </div>
             <PanelDivider />
             <div>
               <PanelSectionLabel>Áreas de trabalho</PanelSectionLabel>
@@ -463,12 +491,22 @@ export function ProjectDetail() {
                     </WorkspaceNavRowBody>
                   </WorkspaceNavRowLocked>
                 )}
-                <WorkspaceNavLinkFiles to={`/projects/${project.id}/subproject-files`}>
+                <WorkspaceNavLinkFiles
+                  to={
+                    isMonorepo
+                      ? `/projects/${project.id}/workspace-files`
+                      : `/projects/${project.id}/subproject-files`
+                  }
+                >
                   <WorkspaceNavIconWrap>{iconFiles}</WorkspaceNavIconWrap>
                   <WorkspaceNavRowBody>
-                    <WorkspaceNavRowTitle>Arquivos dos subprojetos</WorkspaceNavRowTitle>
+                    <WorkspaceNavRowTitle>
+                      {isMonorepo ? 'Explorador de arquivos' : 'Arquivos dos subprojetos'}
+                    </WorkspaceNavRowTitle>
                     <WorkspaceNavRowDesc>
-                      Visão estilo repositório; ou duplo-clique em um bloco no mapa.
+                      {isMonorepo
+                        ? 'Árvore única do monorepo (apps/ e packages/); duplo-clique em um bloco no mapa.'
+                        : 'Um repositório por bloco; duplo-clique no mapa abre o subprojeto.'}
                     </WorkspaceNavRowDesc>
                   </WorkspaceNavRowBody>
                   <WorkspaceNavChevron aria-hidden>→</WorkspaceNavChevron>

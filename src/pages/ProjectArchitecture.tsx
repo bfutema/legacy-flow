@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { ProjectArchitectureCanvas } from '../components/ProjectArchitectureCanvas'
 import { resolveProjectById } from '../data/projects'
+import { useProjectMonorepo } from '../hooks/useProjectMonorepo'
 import {
   BackLink,
   ModelingPageRoot,
@@ -42,6 +43,8 @@ export function ProjectArchitecture() {
     [projectId, metaTick],
   )
 
+  const { isMonorepo } = useProjectMonorepo(projectId)
+
   if (!projectId) {
     return <Navigate to="/projects" replace />
   }
@@ -61,6 +64,7 @@ export function ProjectArchitecture() {
         projectId={project.id}
         theaterMode={theaterMode}
         onToggleTheater={() => setTheaterMode((v) => !v)}
+        isMonorepo={isMonorepo}
       />
     </ModelingPageRoot>
   )

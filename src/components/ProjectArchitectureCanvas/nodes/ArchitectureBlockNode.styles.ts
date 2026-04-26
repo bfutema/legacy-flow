@@ -109,3 +109,12 @@ export const SlugRow = styled.div`
   opacity: 0.9;
   word-break: break-all;
 `
+
+export const MonorepoBadge = styled.div`
+  margin-top: 0.35rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textMuted};
+`

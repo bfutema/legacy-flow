@@ -1,5 +1,7 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { defaultMonorepoRoleForKind } from '../../../pages/subprojectFiles/workspaceSeedPaths'
+import { useArchitectureLayout } from '../ArchitectureLayoutContext'
 import { ARCHITECTURE_KIND_LABEL } from '../architectureKindMeta'
 import {
   normalizeTechForNode,
@@ -12,6 +14,7 @@ import {
   CardInner,
   DragStrip,
   KindBadge,
+  MonorepoBadge,
   Root,
   SlugRow,
   TechHint,
@@ -24,7 +27,9 @@ export const ArchitectureBlockNode = memo(function ArchitectureBlockNode({
   data,
   selected,
 }: NodeProps<ArchitectureRfNode>) {
+  const { isMonorepo } = useArchitectureLayout()
   const accent = ARCHITECTURE_KIND_ACCENT[data.kind]
+  const monorepoRole = data.monorepoRole ?? defaultMonorepoRoleForKind(data.kind)
   const nodeTech = normalizeTechForNode(
     data.kind,
     data.runtime,
@@ -50,6 +55,11 @@ export const ArchitectureBlockNode = memo(function ArchitectureBlockNode({
             </TechHint>
           ) : null}
           {data.slug ? <SlugRow title="Slug para codegen / monorepo">{data.slug}</SlugRow> : null}
+          {isMonorepo && data.kind !== 'database' ? (
+            <MonorepoBadge title="Pasta raiz no monorepo">
+              {monorepoRole === 'package' ? 'packages/' : 'apps/'}
+            </MonorepoBadge>
+          ) : null}
         </Body>
       </CardInner>
       <Handle

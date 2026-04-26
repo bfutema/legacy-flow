@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getUserById } from '../../data/directoryUsers'
 import { resolveProjectById } from '../../data/projects'
+import { isProjectMonorepo } from '../../hooks/useProjectMonorepo'
 import { findArchitectureBlock } from '../../pages/subprojectFiles/architectureBlocksLoader'
 import {
   CrumbLink,
@@ -101,6 +102,16 @@ function crumbsForPath(pathname: string): CrumbItem[] {
     ]
   }
 
+  const projWorkspaceFiles = normalized.match(/^\/projects\/([^/]+)\/workspace-files$/)
+  if (projWorkspaceFiles) {
+    const p = resolveProjectById(projWorkspaceFiles[1])
+    return [
+      { label: 'Projetos', path: '/projects' },
+      { label: p?.name ?? 'Projeto', path: `/projects/${projWorkspaceFiles[1]}` },
+      { label: 'Explorador de arquivos' },
+    ]
+  }
+
   const projSubFilesView = normalized.match(
     /^\/projects\/([^/]+)\/subproject-files\/([^/]+)$/,
   )
@@ -144,17 +155,25 @@ function siblingPagesForPath(pathname: string): CrumbItem[] | null {
   const model = normalized.match(/^\/projects\/([^/]+)\/modeling$/)
   const arch = normalized.match(/^\/projects\/([^/]+)\/architecture$/)
   const filesHub = normalized.match(/^\/projects\/([^/]+)\/subproject-files$/)
+  const workspace = normalized.match(/^\/projects\/([^/]+)\/workspace-files$/)
 
-  const projectId = model?.[1] ?? arch?.[1] ?? filesHub?.[1]
+  const projectId = model?.[1] ?? arch?.[1] ?? filesHub?.[1] ?? workspace?.[1]
   if (!projectId) return null
+
+  const filesEntry = isProjectMonorepo(projectId)
+    ? {
+        label: 'Explorador de arquivos',
+        path: `/projects/${projectId}/workspace-files`,
+      }
+    : {
+        label: 'Arquivos dos subprojetos',
+        path: `/projects/${projectId}/subproject-files`,
+      }
 
   return [
     { label: 'Modelagem', path: `/projects/${projectId}/modeling` },
     { label: 'Arquitetura', path: `/projects/${projectId}/architecture` },
-    {
-      label: 'Arquivos dos subprojetos',
-      path: `/projects/${projectId}/subproject-files`,
-    },
+    filesEntry,
   ]
 }
 
@@ -179,7 +198,10 @@ export function Breadcrumbs() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshTick para metadados e diagrama
     [pathname, refreshTick],
   )
-  const siblingPages = useMemo(() => siblingPagesForPath(pathname), [pathname])
+  const siblingPages = useMemo(
+    () => siblingPagesForPath(pathname),
+    [pathname, refreshTick],
+  )
 
   useEffect(() => {
     setMenuOpen(false)

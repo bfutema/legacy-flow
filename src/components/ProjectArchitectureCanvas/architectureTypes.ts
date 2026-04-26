@@ -15,6 +15,9 @@ export type ArchitectureBlockKind =
   | 'database'
   | 'external'
 
+/** No monorepo: pasta sob apps/ ou packages/. */
+export type ArchitectureMonorepoRole = 'app' | 'package'
+
 export type ArchitectureBlockNodeData = {
   /** Presente após sync com projeto no canvas */
   projectId?: string
@@ -32,6 +35,8 @@ export type ArchitectureBlockNodeData = {
   projectPrimaryDatabase?: PrimaryDatabaseType
   /** Identificador estável para codegen / monorepo no futuro */
   slug?: string
+  /** Em layout monorepo: este bloco vive em apps/ ou packages/. */
+  monorepoRole?: ArchitectureMonorepoRole
   /**
    * Placeholder de árvore de arquivos gerados (front/back).
    * Quando existir backend, substituir por dados reais.

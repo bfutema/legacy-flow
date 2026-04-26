@@ -28,11 +28,13 @@ export function createDemoArchitectureNodes(
       clientSurface: 'web',
       runtime: 'vite',
       techHint: techLabel('vite'),
-      slug: 'admin-frontend',
+      slug: 'web',
+      monorepoRole: 'app',
       generatedPaths: [
-        'apps/admin/package.json',
-        'apps/admin/src/main.tsx',
-        'apps/admin/vite.config.ts',
+        'package.json',
+        'src/main.tsx',
+        'src/app.tsx',
+        'vite.config.ts',
       ],
     }),
     block('arch-api', { x: 380, y: 40 }, {
@@ -42,10 +44,8 @@ export function createDemoArchitectureNodes(
       runtime: 'fastify',
       techHint: techLabel('fastify'),
       slug: 'api',
-      generatedPaths: [
-        'services/api/package.json',
-        'services/api/src/server.ts',
-      ],
+      monorepoRole: 'app',
+      generatedPaths: ['package.json', 'src/server.ts'],
     }),
     block('arch-queue', { x: 380, y: 220 }, {
       projectId,
@@ -54,6 +54,7 @@ export function createDemoArchitectureNodes(
       runtime: 'aws-sqs',
       techHint: techLabel('aws-sqs'),
       slug: 'email-queue',
+      monorepoRole: 'package',
       generatedPaths: [],
     }),
     block('arch-worker', { x: 720, y: 220 }, {
@@ -61,11 +62,9 @@ export function createDemoArchitectureNodes(
       label: 'Worker de envio',
       kind: 'worker',
       techHint: 'Consumidor',
-      slug: 'email-worker',
-      generatedPaths: [
-        'workers/email/package.json',
-        'workers/email/src/index.ts',
-      ],
+      slug: 'mail-worker',
+      monorepoRole: 'app',
+      generatedPaths: ['package.json', 'src/index.ts'],
     }),
   ]
 
