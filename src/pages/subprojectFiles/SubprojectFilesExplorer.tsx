@@ -7,6 +7,7 @@ import {
   techLabel,
 } from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import type { ArchitectureBlockSummary } from './architectureBlocksLoader'
+import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { mockContentForPath } from './mockFileContent'
 import { pathsToTree, type PathTreeNode } from './pathTree'
 import { extractSymbolsFromContent } from './extractSymbols'
@@ -103,6 +104,7 @@ type Props = {
 }
 
 export function SubprojectFilesExplorer({ projectId, projectName, block }: Props) {
+  const { projectCloud } = useProjectCloud(projectId)
   const paths = useMemo(
     () => block.data.generatedPaths ?? [],
     [block.data.generatedPaths],
@@ -141,8 +143,20 @@ export function SubprojectFilesExplorer({ projectId, projectName, block }: Props
 
   const lineRows = useMemo(() => content.split('\n'), [content])
   const blockTech = useMemo(
-    () => normalizeTechForNode(block.data.kind, block.data.runtime, block.data.techHint),
-    [block.data.kind, block.data.runtime, block.data.techHint],
+    () =>
+      normalizeTechForNode(
+        block.data.kind,
+        block.data.runtime,
+        block.data.techHint,
+        block.data.projectCloud ?? projectCloud,
+      ),
+    [
+      block.data.kind,
+      block.data.projectCloud,
+      block.data.runtime,
+      block.data.techHint,
+      projectCloud,
+    ],
   )
   const blockTechLabel = useMemo(() => techLabel(blockTech), [blockTech])
 

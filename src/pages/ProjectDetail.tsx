@@ -5,24 +5,41 @@ import { useTheme } from 'styled-components'
 import {
   Bar,
   BarChart,
+  Cell,
   CartesianGrid,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 import {
+  ALL_ARCHITECTURE_KINDS,
+  ARCHITECTURE_KIND_ACCENT,
+  ARCHITECTURE_KIND_LABEL,
+} from '../components/ProjectArchitectureCanvas/architectureKindMeta'
+import {
+  isProjectCloudProvider,
+  PROJECT_CLOUD_LABELS,
+  PROJECT_CLOUDS,
+} from '../data/cloudProviders'
+import {
   isPrimaryDatabaseType,
   PRIMARY_DATABASE_LABELS,
   PRIMARY_DATABASES,
 } from '../data/databaseEngines'
 import { AbilityContext } from '../contexts/AbilityContext'
+import { createDemoArchitectureNodes } from '../components/ProjectArchitectureCanvas/demoInitialArchitecture'
 import { deleteProject, resolveProjectById } from '../data/projects'
 import { useModelingDiagramStats } from '../hooks/useModelingDiagramStats'
+import { useProjectCloud } from '../hooks/useProjectCloud'
 import { useProjectPrimaryDatabase } from '../hooks/useProjectPrimaryDatabase'
+import { loadArchitectureFlow } from '../persistence/architectureFlowStorage'
 import { HelpInfoTooltip } from '../components/HelpInfoTooltip/HelpInfoTooltip'
 import { TrashDeleteButton } from '../components/TrashDeleteButton/TrashDeleteButton'
 import { PageHeader } from '../layouts/PageHeader'
+import { listArchitectureBlocks } from './subprojectFiles/architectureBlocksLoader'
 import {
   BackLink,
   DbLabelInRow,
@@ -35,10 +52,14 @@ import {
   DiagramCardTitle,
   DiagramChartBox,
   DiagramHint,
+  MiniChartCard,
+  MiniChartTitle,
+  MiniChartWrap,
   PanelDbSettingRow,
   PanelDivider,
   PanelSectionLabel,
   ProjectDetailRoot,
+  SecondaryChartsGrid,
   SideOverviewPanel,
   StatPill,
   StatRowMini,
@@ -112,7 +133,11 @@ export function ProjectDetail() {
   useEffect(() => {
     const bump = () => setInfoTick((n) => n + 1)
     window.addEventListener('flow-project-meta-changed', bump)
-    return () => window.removeEventListener('flow-project-meta-changed', bump)
+    window.addEventListener('flow-architecture-changed', bump)
+    return () => {
+      window.removeEventListener('flow-project-meta-changed', bump)
+      window.removeEventListener('flow-architecture-changed', bump)
+    }
   }, [])
 
   const project = useMemo(
@@ -123,6 +148,7 @@ export function ProjectDetail() {
 
   const { primaryDatabase, setPrimaryDatabase } =
     useProjectPrimaryDatabase(projectId)
+  const { projectCloud, setProjectCloud } = useProjectCloud(projectId)
   const { tableCount, relationCount } = useModelingDiagramStats(projectId)
 
   const chartData = useMemo(
@@ -132,6 +158,46 @@ export function ProjectDetail() {
     ],
     [tableCount, relationCount],
   )
+  const architectureBlocks = useMemo(
+    () => (projectId ? listArchitectureBlocks(projectId) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- infoTick invalida ao mudar arquitetura
+    [projectId, infoTick],
+  )
+  const architectureEdgeCount = useMemo(() => {
+    if (!projectId) return 0
+    const saved = loadArchitectureFlow(projectId)
+    if (saved?.edges) return saved.edges.length
+    return createDemoArchitectureNodes(projectId).edges.length
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- infoTick invalida ao mudar arquitetura
+  }, [projectId, infoTick])
+  const kindChartData = useMemo(() => {
+    const counts = ALL_ARCHITECTURE_KINDS.reduce(
+      (acc, kind) => {
+        acc[kind] = 0
+        return acc
+      },
+      {} as Record<(typeof ALL_ARCHITECTURE_KINDS)[number], number>,
+    )
+    for (const b of architectureBlocks) {
+      counts[b.data.kind] += 1
+    }
+    return ALL_ARCHITECTURE_KINDS.map((kind) => ({
+      kind,
+      label: ARCHITECTURE_KIND_LABEL[kind],
+      q: counts[kind],
+      color: ARCHITECTURE_KIND_ACCENT[kind],
+    })).filter((x) => x.q > 0)
+  }, [architectureBlocks])
+  const coverageData = useMemo(() => {
+    const withRuntime = architectureBlocks.filter((b) => Boolean(b.data.runtime)).length
+    const withSlug = architectureBlocks.filter((b) => Boolean(b.data.slug)).length
+    return [
+      { label: 'Blocos', q: architectureBlocks.length },
+      { label: 'Ligações', q: architectureEdgeCount },
+      { label: 'Com runtime', q: withRuntime },
+      { label: 'Com slug', q: withSlug },
+    ]
+  }, [architectureBlocks, architectureEdgeCount])
 
   if (!projectId) {
     return <Navigate to="/projects" replace />
@@ -214,6 +280,66 @@ export function ProjectDetail() {
               Dados do diagrama salvo no navegador; se você ainda não editou a
               modelagem, aparece o modelo inicial de referência.
             </DiagramHint>
+            <SecondaryChartsGrid>
+              <MiniChartCard>
+                <MiniChartTitle>Arquitetura por tipo</MiniChartTitle>
+                <MiniChartWrap>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={kindChartData}
+                        dataKey="q"
+                        nameKey="label"
+                        innerRadius={36}
+                        outerRadius={62}
+                        paddingAngle={2}
+                      >
+                        {kindChartData.map((entry) => (
+                          <Cell key={entry.kind} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          background: theme.surface,
+                          border: `1px solid ${theme.border}`,
+                          borderRadius: 8,
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </MiniChartWrap>
+              </MiniChartCard>
+              <MiniChartCard>
+                <MiniChartTitle>Cobertura de arquitetura</MiniChartTitle>
+                <MiniChartWrap>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={coverageData} margin={{ top: 4, right: 10, left: 0, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: theme.chartAxis, fontSize: 10 }}
+                        interval={0}
+                        angle={-12}
+                        textAnchor="end"
+                        height={42}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fill: theme.chartAxis, fontSize: 11 }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: theme.surface,
+                          border: `1px solid ${theme.border}`,
+                          borderRadius: 8,
+                        }}
+                      />
+                      <Bar dataKey="q" fill={theme.primary} radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </MiniChartWrap>
+              </MiniChartCard>
+            </SecondaryChartsGrid>
           </DiagramCard>
         </DetailMainColumn>
         <DetailSideColumn>
@@ -245,6 +371,39 @@ export function ProjectDetail() {
                   {PRIMARY_DATABASES.map((key) => (
                     <option key={key} value={key}>
                       {PRIMARY_DATABASE_LABELS[key]}
+                    </option>
+                  ))}
+                </DbSelect>
+              </PanelDbSettingRow>
+            </div>
+            <div>
+              <PanelSectionLabel>Cloud principal</PanelSectionLabel>
+              <PanelDbSettingRow>
+                <DbLabelRow>
+                  <DbLabelInRow htmlFor="project-primary-cloud">
+                    Padrão para filas e serviços de infraestrutura
+                  </DbLabelInRow>
+                  <HelpInfoTooltip
+                    ariaLabel="Ajuda: cloud padrão do projeto"
+                    tooltipId="project-primary-cloud-tip"
+                  >
+                    Novas filas no mapa de arquitetura usam por padrão o serviço da cloud
+                    escolhida (AWS SQS, GCP Pub/Sub ou Azure Service Bus). Você ainda pode
+                    trocar por bloco depois.
+                  </HelpInfoTooltip>
+                </DbLabelRow>
+                <DbSelect
+                  id="project-primary-cloud"
+                  value={projectCloud}
+                  disabled={!canUpdateProject}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (isProjectCloudProvider(v)) setProjectCloud(v)
+                  }}
+                >
+                  {PROJECT_CLOUDS.map((key) => (
+                    <option key={key} value={key}>
+                      {PROJECT_CLOUD_LABELS[key]}
                     </option>
                   ))}
                 </DbSelect>

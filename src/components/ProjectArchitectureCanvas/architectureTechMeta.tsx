@@ -3,13 +3,16 @@ import {
   SiAngular,
   SiExpress,
   SiFastify,
+  SiGooglecloud,
   SiKoa,
   SiNestjs,
   SiNextdotjs,
   SiVite,
   SiVuedotjs,
 } from 'react-icons/si'
+import { FaAws, FaMicrosoft } from 'react-icons/fa6'
 import type { ComponentType, ReactNode } from 'react'
+import type { ProjectCloudProvider } from '../../data/cloudProviders'
 import type { ArchitectureBlockKind } from './architectureTypes'
 
 export type ArchitectureClientTech = 'vite' | 'nextjs' | 'vuejs' | 'angular'
@@ -19,8 +22,12 @@ export type ArchitectureServiceTech =
   | 'koa'
   | 'nestjs'
   | 'adonisjs'
+export type ArchitectureQueueTech = 'aws-sqs' | 'gcp-pubsub' | 'azure-service-bus'
 
-export type ArchitectureRuntimeTech = ArchitectureClientTech | ArchitectureServiceTech
+export type ArchitectureRuntimeTech =
+  | ArchitectureClientTech
+  | ArchitectureServiceTech
+  | ArchitectureQueueTech
 
 export const ARCH_CLIENT_TECHS: ArchitectureClientTech[] = [
   'vite',
@@ -35,6 +42,11 @@ export const ARCH_SERVICE_TECHS: ArchitectureServiceTech[] = [
   'nestjs',
   'adonisjs',
 ]
+export const ARCH_QUEUE_TECHS: ArchitectureQueueTech[] = [
+  'aws-sqs',
+  'gcp-pubsub',
+  'azure-service-bus',
+]
 
 const TECH_LABEL: Record<ArchitectureRuntimeTech, string> = {
   vite: 'Vite',
@@ -46,6 +58,9 @@ const TECH_LABEL: Record<ArchitectureRuntimeTech, string> = {
   koa: 'Koa',
   nestjs: 'NestJs',
   adonisjs: 'AdonisJs',
+  'aws-sqs': 'AWS SQS',
+  'gcp-pubsub': 'GCP Pub/Sub',
+  'azure-service-bus': 'Azure Service Bus',
 }
 
 const TECH_ICON = {
@@ -58,6 +73,9 @@ const TECH_ICON = {
   koa: SiKoa,
   nestjs: SiNestjs,
   adonisjs: SiAdonisjs,
+  'aws-sqs': FaAws,
+  'gcp-pubsub': SiGooglecloud,
+  'azure-service-bus': FaMicrosoft,
 } satisfies Record<ArchitectureRuntimeTech, ComponentType<{ size?: number }>>
 
 const TECH_FROM_HINT: Record<string, ArchitectureRuntimeTech> = {
@@ -77,11 +95,28 @@ const TECH_FROM_HINT: Record<string, ArchitectureRuntimeTech> = {
   'vue js': 'vuejs',
   angular: 'angular',
   vite: 'vite',
+  sqs: 'aws-sqs',
+  'aws sqs': 'aws-sqs',
+  'gcp pub/sub': 'gcp-pubsub',
+  pubsub: 'gcp-pubsub',
+  'google pubsub': 'gcp-pubsub',
+  'azure service bus': 'azure-service-bus',
+  servicebus: 'azure-service-bus',
 }
 
-export function defaultTechForKind(kind: ArchitectureBlockKind): ArchitectureRuntimeTech | undefined {
+function defaultQueueTechForCloud(cloud: ProjectCloudProvider): ArchitectureQueueTech {
+  if (cloud === 'gcp') return 'gcp-pubsub'
+  if (cloud === 'azure') return 'azure-service-bus'
+  return 'aws-sqs'
+}
+
+export function defaultTechForKind(
+  kind: ArchitectureBlockKind,
+  projectCloud: ProjectCloudProvider = 'aws',
+): ArchitectureRuntimeTech | undefined {
   if (kind === 'client') return 'vite'
   if (kind === 'service') return 'fastify'
+  if (kind === 'queue') return defaultQueueTechForCloud(projectCloud)
   return undefined
 }
 
@@ -107,6 +142,7 @@ export function renderTechIcon(
 export function allowedTechsForKind(kind: ArchitectureBlockKind): ArchitectureRuntimeTech[] {
   if (kind === 'client') return ARCH_CLIENT_TECHS
   if (kind === 'service') return ARCH_SERVICE_TECHS
+  if (kind === 'queue') return ARCH_QUEUE_TECHS
   return []
 }
 
@@ -118,9 +154,10 @@ export function normalizeTechForNode(
   kind: ArchitectureBlockKind,
   tech?: ArchitectureRuntimeTech,
   techHint?: string,
+  projectCloud: ProjectCloudProvider = 'aws',
 ): ArchitectureRuntimeTech | undefined {
   if (tech && isAllowedForKind(kind, tech)) return tech
   const byHint = techHint ? TECH_FROM_HINT[techHint.trim().toLowerCase()] : undefined
   if (byHint && isAllowedForKind(kind, byHint)) return byHint
-  return defaultTechForKind(kind)
+  return defaultTechForKind(kind, projectCloud)
 }

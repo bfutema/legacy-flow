@@ -28,7 +28,9 @@ import {
 } from '@xyflow/react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from 'styled-components'
+import { PROJECT_CLOUD_LABELS } from '../../data/cloudProviders'
 import { HelpInfoTooltip } from '../HelpInfoTooltip/HelpInfoTooltip'
+import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { FsButton } from '../../pages/DatabaseModeling.styles'
 import {
   allowedTechsForKind,
@@ -72,6 +74,7 @@ import {
   RailTitleWithHelp,
   SegmentBtn,
   Segmented,
+  SmallInput,
   SmallSelect,
   SideRail,
   StatusDot,
@@ -128,6 +131,7 @@ function ArchitectureFlowWorkbench({
   const [visibleKinds, setVisibleKinds] =
     useState<Record<ArchitectureBlockKind, boolean>>(defaultKindVisibility)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const { projectCloud } = useProjectCloud(projectId)
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId && n.type === 'architectureBlock'),
     [nodes, selectedNodeId],
@@ -145,8 +149,9 @@ function ArchitectureFlowWorkbench({
       selectedBlockData.kind,
       selectedBlockData.runtime,
       selectedBlockData.techHint,
+      selectedBlockData.projectCloud ?? projectCloud,
     )
-  }, [selectedBlockData])
+  }, [selectedBlockData, projectCloud])
   const filteredKinds = useMemo(() => {
     const q = addQuery.trim().toLowerCase()
     if (!q) return ALL_ARCHITECTURE_KINDS
@@ -208,14 +213,14 @@ function ArchitectureFlowWorkbench({
       nds.map((n) => {
         if (n.type !== 'architectureBlock') return n
         const d = n.data as ArchitectureBlockNodeData
-        if (d.projectId === projectId) return n
+        if (d.projectId === projectId && d.projectCloud === projectCloud) return n
         return {
           ...n,
-          data: { ...d, projectId },
+          data: { ...d, projectId, projectCloud },
         }
       }),
     )
-  }, [projectId, setNodes])
+  }, [projectCloud, projectId, setNodes])
 
   /** Diagramas antigos com `dragHandle` só arrastavam pela faixa fina — remover. */
   useEffect(() => {
@@ -320,7 +325,7 @@ function ArchitectureFlowWorkbench({
         y: window.innerHeight * 0.36,
       })
       const labelBase = ARCHITECTURE_KIND_LABEL[kind]
-      const runtime = defaultTechForKind(kind)
+      const runtime = defaultTechForKind(kind, projectCloud)
       const newNode: Node<ArchitectureBlockNodeData> = {
         id,
         type: 'architectureBlock',
@@ -329,19 +334,21 @@ function ArchitectureFlowWorkbench({
           projectId,
           label: `${labelBase} novo`,
           kind,
+          projectCloud,
           runtime,
           techHint: runtime ? techLabel(runtime) : '',
           slug: `${kind}-${id.slice(-6)}`,
-          generatedPaths: [
-            '… estrutura será gerada pela CLI / backend (em breve)',
-          ],
+          generatedPaths:
+            kind === 'queue'
+              ? []
+              : ['… estrutura será gerada pela CLI / backend (em breve)'],
         },
       }
       setNodes((nds) => [...nds, newNode])
       setAddPanelOpen(false)
       setAddQuery('')
     },
-    [projectId, screenToFlowPosition, setNodes],
+    [projectCloud, projectId, screenToFlowPosition, setNodes],
   )
 
   const updateSelectedRuntime = useCallback(
@@ -351,12 +358,33 @@ function ArchitectureFlowWorkbench({
         nds.map((n) => {
           if (n.id !== selectedNodeId || n.type !== 'architectureBlock') return n
           const data = n.data as ArchitectureBlockNodeData
+          if (!allowedTechsForKind(data.kind).includes(runtime as never)) return n
           return {
             ...n,
             data: {
               ...data,
               runtime: runtime as ArchitectureBlockNodeData['runtime'],
               techHint: techLabel(runtime as ArchitectureBlockNodeData['runtime']) ?? data.techHint,
+            },
+          }
+        }),
+      )
+    },
+    [selectedNodeId, setNodes],
+  )
+
+  const updateSelectedLabel = useCallback(
+    (label: string) => {
+      if (!selectedNodeId) return
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== selectedNodeId || n.type !== 'architectureBlock') return n
+          const data = n.data as ArchitectureBlockNodeData
+          return {
+            ...n,
+            data: {
+              ...data,
+              label: label.trimStart(),
             },
           }
         }),
@@ -556,7 +584,31 @@ function ArchitectureFlowWorkbench({
                 </SegmentBtn>
               </Segmented>
             </RailSection>
-            {selectedBlockData && ['client', 'service'].includes(selectedBlockData.kind) ? (
+            {selectedBlockData ? (
+              <RailSection>
+                <RailTitle>Nome do subprojeto</RailTitle>
+                <InlineLabel htmlFor="arch-block-label-input">
+                  Edite o nome exibido no bloco
+                </InlineLabel>
+                <SmallInput
+                  id="arch-block-label-input"
+                  value={selectedBlockData.label}
+                  maxLength={64}
+                  onChange={(e) => updateSelectedLabel(e.target.value)}
+                  onBlur={(e) => {
+                    const next = e.target.value.trim()
+                    if (!next) {
+                      updateSelectedLabel('Bloco sem nome')
+                    } else if (next !== e.target.value) {
+                      updateSelectedLabel(next)
+                    }
+                  }}
+                  placeholder="Nome do bloco"
+                />
+              </RailSection>
+            ) : null}
+            {selectedBlockData &&
+            ['client', 'service', 'queue'].includes(selectedBlockData.kind) ? (
               <RailSection>
                 <RailTitle>Tecnologia do bloco</RailTitle>
                 <InlineLabel htmlFor="arch-runtime-select">
@@ -575,6 +627,11 @@ function ArchitectureFlowWorkbench({
                     </option>
                   ))}
                 </SmallSelect>
+                {selectedBlockData.kind === 'queue' ? (
+                  <InlineLabel htmlFor="arch-runtime-select" style={{ marginTop: '0.35rem' }}>
+                    Cloud padrão do projeto: {PROJECT_CLOUD_LABELS[projectCloud]}
+                  </InlineLabel>
+                ) : null}
               </RailSection>
             ) : null}
             <RailSection>

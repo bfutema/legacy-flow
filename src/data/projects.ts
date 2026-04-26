@@ -1,4 +1,5 @@
 import type { PrimaryDatabaseType } from './databaseEngines'
+import type { ProjectCloudProvider } from './cloudProviders'
 import {
   addDeletedSeedProjectId,
   loadDeletedSeedProjectIds,
@@ -26,6 +27,8 @@ export type Project = {
   primaryDatabase: PrimaryDatabaseType
   /** Cor primária (hex #RRGGBB) — header das tabelas no diagrama */
   primaryColor: string
+  /** Cloud principal do projeto (default para escolhas de infraestrutura). */
+  primaryCloud?: ProjectCloudProvider
   /** Período opcional (YYYY-MM-DD) para exibição na Timeline quando não há barras */
   timelineStartDate?: string
   timelineEndDate?: string
@@ -39,6 +42,7 @@ export const PROJECTS: Project[] = [
     updatedAt: '2026-04-08',
     primaryDatabase: 'mysql',
     primaryColor: '#c2410c',
+    primaryCloud: 'aws',
   },
   {
     id: 'crm',
@@ -47,6 +51,7 @@ export const PROJECTS: Project[] = [
     updatedAt: '2026-04-05',
     primaryDatabase: 'postgresql',
     primaryColor: '#8b5cf6',
+    primaryCloud: 'gcp',
   },
   {
     id: 'faturamento',
@@ -55,6 +60,7 @@ export const PROJECTS: Project[] = [
     updatedAt: '2026-03-28',
     primaryDatabase: 'mssql',
     primaryColor: '#059669',
+    primaryCloud: 'azure',
   },
   {
     id: 'rh',
@@ -63,6 +69,7 @@ export const PROJECTS: Project[] = [
     updatedAt: '2026-03-20',
     primaryDatabase: 'postgresql',
     primaryColor: '#ea580c',
+    primaryCloud: 'aws',
   },
   {
     id: 'logistica',
@@ -71,6 +78,7 @@ export const PROJECTS: Project[] = [
     updatedAt: '2026-04-01',
     primaryDatabase: 'mysql',
     primaryColor: '#0d9488',
+    primaryCloud: 'gcp',
   },
   {
     id: 'bi',
@@ -79,6 +87,7 @@ export const PROJECTS: Project[] = [
     updatedAt: '2026-04-10',
     primaryDatabase: 'mssql',
     primaryColor: '#6366f1',
+    primaryCloud: 'azure',
   },
 ]
 
@@ -140,6 +149,7 @@ export function createUserProject(input: NewProjectInput): Project {
     updatedAt: new Date().toISOString(),
     primaryDatabase: input.primaryDatabase,
     primaryColor: normalizeProjectPrimaryColor(input.primaryColor),
+    primaryCloud: 'aws',
     ...(input.timelineStartDate && input.timelineEndDate
       ? {
           timelineStartDate: input.timelineStartDate,

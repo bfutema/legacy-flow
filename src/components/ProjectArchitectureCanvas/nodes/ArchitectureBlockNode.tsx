@@ -25,7 +25,12 @@ export const ArchitectureBlockNode = memo(function ArchitectureBlockNode({
   selected,
 }: NodeProps<ArchitectureRfNode>) {
   const accent = ARCHITECTURE_KIND_ACCENT[data.kind]
-  const nodeTech = normalizeTechForNode(data.kind, data.runtime, data.techHint)
+  const nodeTech = normalizeTechForNode(
+    data.kind,
+    data.runtime,
+    data.techHint,
+    data.projectCloud,
+  )
   const nodeTechLabel = techLabel(nodeTech)
   return (
     <Root $accent={accent} $selected={selected}>

@@ -264,6 +264,26 @@ export const SmallSelect = styled.select`
   }
 `
 
+export const SmallInput = styled.input`
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+  font-size: 0.72rem;
+
+  &::placeholder {
+    color: ${({ theme }) => theme.textMuted};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.primaryMuted};
+  }
+`
+
 export const SegmentBtn = styled.button<{ $active?: boolean }>`
   flex: 1;
   padding: 0.35rem 0.4rem;

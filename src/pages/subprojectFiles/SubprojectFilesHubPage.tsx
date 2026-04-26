@@ -8,6 +8,7 @@ import {
 } from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import { resolveProjectById } from '../../data/projects'
 import { getEffectiveProjectPrimaryColor } from '../../hooks/useProjectPrimaryColor'
+import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { listArchitectureBlocks } from './architectureBlocksLoader'
 import {
   BackLinkStyled,
@@ -24,6 +25,7 @@ import { ModelingPageRoot } from '../DatabaseModeling.styles'
 export function SubprojectFilesHubPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const [refreshTick, setRefreshTick] = useState(0)
+  const { projectCloud } = useProjectCloud(projectId)
 
   useEffect(() => {
     const bump = () => setRefreshTick((n) => n + 1)
@@ -73,7 +75,12 @@ export function SubprojectFilesHubPage() {
       ) : (
         <HubGrid>
           {blocks.map((b) => {
-            const tech = normalizeTechForNode(b.data.kind, b.data.runtime, b.data.techHint)
+            const tech = normalizeTechForNode(
+              b.data.kind,
+              b.data.runtime,
+              b.data.techHint,
+              b.data.projectCloud ?? projectCloud,
+            )
             const label = techLabel(tech)
             return (
               <HubCard

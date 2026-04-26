@@ -50,9 +50,10 @@ export function createDemoArchitectureNodes(
       projectId,
       label: 'Fila de e-mails',
       kind: 'queue',
-      techHint: 'Mensageria',
+      runtime: 'aws-sqs',
+      techHint: techLabel('aws-sqs'),
       slug: 'email-queue',
-      generatedPaths: ['infra/queue/email.yaml'],
+      generatedPaths: [],
     }),
     block('arch-worker', { x: 720, y: 220 }, {
       projectId,

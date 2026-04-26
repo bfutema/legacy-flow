@@ -1,4 +1,5 @@
 import type { PrimaryDatabaseType } from '../data/databaseEngines'
+import type { ProjectCloudProvider } from '../data/cloudProviders'
 
 const STORAGE_KEY = 'flow-user-projects'
 const VERSION = 1
@@ -11,6 +12,7 @@ export type StoredProjectRow = {
   updatedAt: string
   primaryDatabase: PrimaryDatabaseType
   primaryColor: string
+  primaryCloud?: ProjectCloudProvider
   timelineStartDate?: string
   timelineEndDate?: string
 }
@@ -32,6 +34,14 @@ function isProjectShape(x: unknown): x is StoredProjectRow {
       p.primaryDatabase !== 'postgresql' &&
       p.primaryDatabase !== 'mssql') ||
     typeof p.primaryColor !== 'string'
+  ) {
+    return false
+  }
+  if (
+    p.primaryCloud != null &&
+    p.primaryCloud !== 'aws' &&
+    p.primaryCloud !== 'gcp' &&
+    p.primaryCloud !== 'azure'
   ) {
     return false
   }

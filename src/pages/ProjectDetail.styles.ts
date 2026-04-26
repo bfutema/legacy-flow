@@ -462,6 +462,39 @@ export const DiagramChartBox = styled.div`
   width: 100%;
 `
 
+export const SecondaryChartsGrid = styled.div`
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+
+  @media (max-width: 1050px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+export const MiniChartCard = styled.div`
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) =>
+    theme.mode === 'dark' ? 'rgba(2, 6, 23, 0.45)' : theme.surfaceHover};
+`
+
+export const MiniChartTitle = styled.h4`
+  margin: 0 0 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const MiniChartWrap = styled.div`
+  width: 100%;
+  height: 170px;
+`
+
 export const StatRowMini = styled.div`
   display: flex;
   flex-wrap: wrap;

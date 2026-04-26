@@ -1,4 +1,5 @@
 import type { Node } from '@xyflow/react'
+import type { ProjectCloudProvider } from '../../data/cloudProviders'
 import type { ArchitectureRuntimeTech } from './architectureTechMeta'
 
 /** Tipos de bloco na vista inicial; novos tipos (cloud etc.) entram aqui depois. */
@@ -19,6 +20,8 @@ export type ArchitectureBlockNodeData = {
   techHint?: string
   /** Runtime/framework principal do bloco (cliente/serviço). */
   runtime?: ArchitectureRuntimeTech
+  /** Cloud atribuída ao bloco (usada em defaults de infraestrutura). */
+  projectCloud?: ProjectCloudProvider
   /** Identificador estável para codegen / monorepo no futuro */
   slug?: string
   /**
