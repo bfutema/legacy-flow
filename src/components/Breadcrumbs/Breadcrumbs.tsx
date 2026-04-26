@@ -1,9 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getUserById } from '../../data/directoryUsers'
 import { resolveProjectById } from '../../data/projects'
 import { findArchitectureBlock } from '../../pages/subprojectFiles/architectureBlocksLoader'
-import { CrumbLink, Current, Nav, Sep } from './Breadcrumbs.styles'
+import {
+  CrumbLink,
+  Current,
+  CurrentMenuButton,
+  CurrentMenuItem,
+  CurrentMenuPopup,
+  CurrentMenuWrap,
+  Nav,
+  Sep,
+} from './Breadcrumbs.styles'
 
 type CrumbItem = { label: string; path?: string }
 
@@ -130,9 +139,30 @@ function crumbsForPath(pathname: string): CrumbItem[] {
   return fallback
 }
 
+function siblingPagesForPath(pathname: string): CrumbItem[] | null {
+  const normalized = pathname.replace(/\/$/, '') || '/'
+  const model = normalized.match(/^\/projects\/([^/]+)\/modeling$/)
+  const arch = normalized.match(/^\/projects\/([^/]+)\/architecture$/)
+  const filesHub = normalized.match(/^\/projects\/([^/]+)\/subproject-files$/)
+
+  const projectId = model?.[1] ?? arch?.[1] ?? filesHub?.[1]
+  if (!projectId) return null
+
+  return [
+    { label: 'Modelagem', path: `/projects/${projectId}/modeling` },
+    { label: 'Arquitetura', path: `/projects/${projectId}/architecture` },
+    {
+      label: 'Arquivos dos subprojetos',
+      path: `/projects/${projectId}/subproject-files`,
+    },
+  ]
+}
+
 export function Breadcrumbs() {
   const { pathname } = useLocation()
   const [refreshTick, setRefreshTick] = useState(0)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLSpanElement>(null)
   useEffect(() => {
     const bump = () => setRefreshTick((n) => n + 1)
     window.addEventListener('flow-project-meta-changed', bump)
@@ -149,6 +179,22 @@ export function Breadcrumbs() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshTick para metadados e diagrama
     [pathname, refreshTick],
   )
+  const siblingPages = useMemo(() => siblingPagesForPath(pathname), [pathname])
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDown = (ev: MouseEvent) => {
+      const target = ev.target as Node | null
+      if (!target || !menuRef.current) return
+      if (!menuRef.current.contains(target)) setMenuOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    return () => window.removeEventListener('mousedown', onDown)
+  }, [menuOpen])
 
   return (
     <Nav aria-label="Breadcrumb">
@@ -160,9 +206,50 @@ export function Breadcrumbs() {
           <span key={`${item.label}-${i}`} style={{ display: 'contents' }}>
             {showSep ? <Sep aria-hidden>/</Sep> : null}
             {isLast || !item.path ? (
-              <Current aria-current={isLast ? 'page' : undefined}>
-                {item.label}
-              </Current>
+              isLast && siblingPages ? (
+                <CurrentMenuWrap ref={menuRef}>
+                  <CurrentMenuButton
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    onClick={() => setMenuOpen((v) => !v)}
+                  >
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.label}
+                    </span>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </CurrentMenuButton>
+                  {menuOpen ? (
+                    <CurrentMenuPopup role="menu">
+                      {siblingPages.map((p) => (
+                        <CurrentMenuItem
+                          key={p.path}
+                          to={p.path ?? '#'}
+                          $active={p.path === pathname}
+                          role="menuitem"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          {p.label}
+                        </CurrentMenuItem>
+                      ))}
+                    </CurrentMenuPopup>
+                  ) : null}
+                </CurrentMenuWrap>
+              ) : (
+                <Current aria-current={isLast ? 'page' : undefined}>
+                  {item.label}
+                </Current>
+              )
             ) : (
               <CrumbLink to={item.path}>{item.label}</CrumbLink>
             )}
