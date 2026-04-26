@@ -217,6 +217,20 @@ function defineMonacoThemes(monaco: Parameters<NonNullable<React.ComponentProps<
       'editorIndentGuide.activeBackground1': '#CBD5E1',
     },
   })
+
+  // O worker do TS assume um projeto completo (node_modules, tsconfig, irmãos no disco).
+  // Aqui só há um arquivo por vez → "Cannot find module" e similares são ruído.
+  const relaxedTsJsDiagnostics = {
+    noSemanticValidation: true,
+    noSyntaxValidation: false,
+    noSuggestionDiagnostics: true,
+  }
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
+    relaxedTsJsDiagnostics,
+  )
+  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
+    relaxedTsJsDiagnostics,
+  )
 }
 
 function filterTree(nodes: PathTreeNode[], q: string): PathTreeNode[] {
