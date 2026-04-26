@@ -29,8 +29,8 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from 'styled-components'
 import { PROJECT_CLOUD_LABELS } from '../../data/cloudProviders'
-import { HelpInfoTooltip } from '../HelpInfoTooltip/HelpInfoTooltip'
 import { useProjectCloud } from '../../hooks/useProjectCloud'
+import { useProjectPrimaryDatabase } from '../../hooks/useProjectPrimaryDatabase'
 import { FsButton } from '../../pages/DatabaseModeling.styles'
 import {
   allowedTechsForKind,
@@ -64,22 +64,11 @@ import {
   FoldSectionHead,
   InlineLabel,
   PageShell,
-  PersistHintBar,
-  PersistHintText,
-  RailHintButton,
-  RailHintLink,
   RailSection,
   RailTitle,
-  RailTitleRow,
-  RailTitleWithHelp,
-  SegmentBtn,
-  Segmented,
   SmallInput,
   SmallSelect,
   SideRail,
-  StatusDot,
-  StatusStrip,
-  StatusStrong,
   TopLeftPanel,
   TopToolbarRow,
 } from './ProjectArchitectureCanvas.styles'
@@ -99,14 +88,24 @@ function defaultKindVisibility(): Record<ArchitectureBlockKind, boolean> {
   )
 }
 
+function normalizeBlockSlug(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s_-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 function ArchitectureFlowWorkbench({
   projectId,
-  projectName,
   theaterMode,
   onToggleTheater,
 }: {
   projectId: string
-  projectName: string
   theaterMode: boolean
   onToggleTheater: () => void
 }) {
@@ -122,6 +121,7 @@ function ArchitectureFlowWorkbench({
   const [addPanelOpen, setAddPanelOpen] = useState(false)
   const [addQuery, setAddQuery] = useState('')
   const addPanelRef = useRef<HTMLDivElement>(null)
+  const addPanelCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const initial = useMemo(() => {
     const saved = loadArchitectureFlow(projectId)
@@ -131,11 +131,11 @@ function ArchitectureFlowWorkbench({
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initial.edges)
-  const [edgeStyle, setEdgeStyle] = useState<'flow' | 'dash'>('flow')
   const [visibleKinds, setVisibleKinds] =
     useState<Record<ArchitectureBlockKind, boolean>>(defaultKindVisibility)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const { projectCloud } = useProjectCloud(projectId)
+  const { primaryDatabase } = useProjectPrimaryDatabase(projectId)
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId && n.type === 'architectureBlock'),
     [nodes, selectedNodeId],
@@ -154,8 +154,9 @@ function ArchitectureFlowWorkbench({
       selectedBlockData.runtime,
       selectedBlockData.techHint,
       selectedBlockData.projectCloud ?? projectCloud,
+      selectedBlockData.projectPrimaryDatabase ?? primaryDatabase,
     )
-  }, [selectedBlockData, projectCloud])
+  }, [selectedBlockData, projectCloud, primaryDatabase])
   const filteredKinds = useMemo(() => {
     const q = addQuery.trim().toLowerCase()
     if (!q) return ALL_ARCHITECTURE_KINDS
@@ -183,6 +184,17 @@ function ArchitectureFlowWorkbench({
     document.addEventListener('mousedown', onPointer)
     return () => document.removeEventListener('mousedown', onPointer)
   }, [addPanelOpen])
+
+  useEffect(() => {
+    const onEsc = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') setAddPanelOpen(false)
+    }
+    window.addEventListener('keydown', onEsc)
+    return () => {
+      window.removeEventListener('keydown', onEsc)
+      if (addPanelCloseTimerRef.current) clearTimeout(addPanelCloseTimerRef.current)
+    }
+  }, [])
 
   const toggleFullscreen = useCallback(() => {
     const el = hostRef.current
@@ -217,14 +229,20 @@ function ArchitectureFlowWorkbench({
       nds.map((n) => {
         if (n.type !== 'architectureBlock') return n
         const d = n.data as ArchitectureBlockNodeData
-        if (d.projectId === projectId && d.projectCloud === projectCloud) return n
+        if (
+          d.projectId === projectId &&
+          d.projectCloud === projectCloud &&
+          d.projectPrimaryDatabase === primaryDatabase
+        ) {
+          return n
+        }
         return {
           ...n,
-          data: { ...d, projectId, projectCloud },
+          data: { ...d, projectId, projectCloud, projectPrimaryDatabase: primaryDatabase },
         }
       }),
     )
-  }, [projectCloud, projectId, setNodes])
+  }, [projectCloud, projectId, primaryDatabase, setNodes])
 
   /** Diagramas antigos com `dragHandle` só arrastavam pela faixa fina — remover. */
   useEffect(() => {
@@ -257,15 +275,14 @@ function ArchitectureFlowWorkbench({
     () =>
       edges.map((e) => ({
         ...e,
-        animated: edgeStyle === 'flow',
+        animated: true,
         style: {
           stroke: theme.textMuted,
           strokeWidth: 1.65,
-          ...(edgeStyle === 'dash' ? { strokeDasharray: '5 6' } : {}),
           ...(e.style as CSSProperties | undefined),
         },
       })),
-    [edges, edgeStyle, theme.textMuted],
+    [edges, theme.textMuted],
   )
 
   const visibleNodeIds = useMemo(
@@ -307,6 +324,8 @@ function ArchitectureFlowWorkbench({
   const onNodeDoubleClick = useCallback(
     (_: ReactMouseEvent, node: Node) => {
       if (node.type !== 'architectureBlock') return
+      const data = node.data as ArchitectureBlockNodeData
+      if (data.kind === 'database') return
       navigate(`/projects/${projectId}/subproject-files/${node.id}`)
     },
     [navigate, projectId],
@@ -329,7 +348,7 @@ function ArchitectureFlowWorkbench({
         y: window.innerHeight * 0.36,
       })
       const labelBase = ARCHITECTURE_KIND_LABEL[kind]
-      const runtime = defaultTechForKind(kind, projectCloud)
+      const runtime = defaultTechForKind(kind, projectCloud, primaryDatabase)
       const newNode: Node<ArchitectureBlockNodeData> = {
         id,
         type: 'architectureBlock',
@@ -339,6 +358,7 @@ function ArchitectureFlowWorkbench({
           label: `${labelBase} novo`,
           kind,
           projectCloud,
+          projectPrimaryDatabase: primaryDatabase,
           runtime,
           techHint: runtime ? techLabel(runtime) : '',
           slug: `${kind}-${id.slice(-6)}`,
@@ -352,7 +372,7 @@ function ArchitectureFlowWorkbench({
       setAddPanelOpen(false)
       setAddQuery('')
     },
-    [projectCloud, projectId, screenToFlowPosition, setNodes],
+    [projectCloud, primaryDatabase, projectId, screenToFlowPosition, setNodes],
   )
 
   const updateSelectedRuntime = useCallback(
@@ -397,8 +417,25 @@ function ArchitectureFlowWorkbench({
     [selectedNodeId, setNodes],
   )
 
-  const nodeCount = visibleNodeIds.size
-  const edgeCount = displayEdges.filter((e) => !e.hidden).length
+  const updateSelectedSlug = useCallback(
+    (slug: string) => {
+      if (!selectedNodeId) return
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== selectedNodeId || n.type !== 'architectureBlock') return n
+          const data = n.data as ArchitectureBlockNodeData
+          return {
+            ...n,
+            data: {
+              ...data,
+              slug: slug.trimStart(),
+            },
+          }
+        }),
+      )
+    },
+    [selectedNodeId, setNodes],
+  )
 
   return (
     <>
@@ -510,8 +547,18 @@ function ArchitectureFlowWorkbench({
                 <AddBlockWrap
                   ref={addPanelRef}
                   className="nodrag nopan"
-                  onMouseEnter={() => setAddPanelOpen(true)}
-                  onMouseLeave={() => setAddPanelOpen(false)}
+                  onMouseEnter={() => {
+                    if (addPanelCloseTimerRef.current) {
+                      clearTimeout(addPanelCloseTimerRef.current)
+                      addPanelCloseTimerRef.current = null
+                    }
+                    setAddPanelOpen(true)
+                  }}
+                  onMouseLeave={() => {
+                    addPanelCloseTimerRef.current = setTimeout(() => {
+                      setAddPanelOpen(false)
+                    }, 260)
+                  }}
                 >
                   <FsButton
                     type="button"
@@ -595,25 +642,6 @@ function ArchitectureFlowWorkbench({
                     ))
                   : null}
               </RailSection>
-            <RailSection>
-              <RailTitle>Estilo de ligação</RailTitle>
-              <Segmented>
-                <SegmentBtn
-                  type="button"
-                  $active={edgeStyle === 'flow'}
-                  onClick={() => setEdgeStyle('flow')}
-                >
-                  Fluxo
-                </SegmentBtn>
-                <SegmentBtn
-                  type="button"
-                  $active={edgeStyle === 'dash'}
-                  onClick={() => setEdgeStyle('dash')}
-                >
-                  Tracejado
-                </SegmentBtn>
-              </Segmented>
-            </RailSection>
             {selectedBlockData ? (
               <RailSection>
                 <RailTitle>Nome do subprojeto</RailTitle>
@@ -637,8 +665,27 @@ function ArchitectureFlowWorkbench({
                 />
               </RailSection>
             ) : null}
+            {selectedBlockData ? (
+              <RailSection>
+                <RailTitle>Slug do bloco</RailTitle>
+                <InlineLabel htmlFor="arch-block-slug-input">
+                  Identificador técnico (URL / codegen)
+                </InlineLabel>
+                <SmallInput
+                  id="arch-block-slug-input"
+                  value={selectedBlockData.slug ?? ''}
+                  maxLength={64}
+                  onChange={(e) => updateSelectedSlug(e.target.value)}
+                  onBlur={(e) => {
+                    const next = normalizeBlockSlug(e.target.value)
+                    updateSelectedSlug(next)
+                  }}
+                  placeholder="ex.: api-principal"
+                />
+              </RailSection>
+            ) : null}
             {selectedBlockData &&
-            ['client', 'service', 'queue'].includes(selectedBlockData.kind) ? (
+            ['client', 'service', 'queue', 'database'].includes(selectedBlockData.kind) ? (
               <RailSection>
                 <RailTitle>Tecnologia do bloco</RailTitle>
                 <InlineLabel htmlFor="arch-runtime-select">
@@ -662,95 +709,38 @@ function ArchitectureFlowWorkbench({
                     Cloud padrão do projeto: {PROJECT_CLOUD_LABELS[projectCloud]}
                   </InlineLabel>
                 ) : null}
+                {selectedBlockData.kind === 'database' ? (
+                  <InlineLabel htmlFor="arch-runtime-select" style={{ marginTop: '0.35rem' }}>
+                    Banco principal do projeto: {primaryDatabase}
+                  </InlineLabel>
+                ) : null}
               </RailSection>
             ) : null}
-            <RailSection>
-              <RailTitleRow>
-                <RailTitleWithHelp>Arquivos do bloco</RailTitleWithHelp>
-                <HelpInfoTooltip ariaLabel="Ajuda: arquivos do bloco e subprojetos">
-                  Duplo-clique em um bloco abre a visão estilo repositório (árvore, caminho e
-                  símbolos). Também é possível escolher o subprojeto a partir da página do
-                  projeto.
-                </HelpInfoTooltip>
-              </RailTitleRow>
-              <RailHintLink
-                className="nodrag nopan"
-                to={`/projects/${projectId}/subproject-files`}
-              >
-                Ver todos os subprojetos →
-              </RailHintLink>
-              <RailHintButton
-                type="button"
-                className="nodrag nopan"
-                disabled={!selectedNodeId}
-                title={
-                  selectedNodeId
-                    ? 'Abrir arquivos do bloco selecionado'
-                    : 'Selecione um bloco no diagrama (um clique)'
-                }
-                onClick={() => {
-                  if (!selectedNodeId) return
-                  navigate(`/projects/${projectId}/subproject-files/${selectedNodeId}`)
-                }}
-              >
-                Abrir bloco selecionado
-              </RailHintButton>
-            </RailSection>
             </SideRail>
           </Panel>
         </ReactFlow>
       </FlowHost>
-      {!theaterMode ? (
-        <StatusStrip style={{ marginTop: '0.65rem' }}>
-          <span>
-            <StatusDot aria-hidden />
-            <StatusStrong>Arquitetura</StatusStrong> · {projectName}
-          </span>
-          <span>
-            {nodeCount} blocos visíveis · {edgeCount} ligações
-          </span>
-          <span>Salvo neste navegador (local)</span>
-        </StatusStrip>
-      ) : null}
     </>
   )
 }
 
 export type ProjectArchitectureCanvasProps = {
   projectId: string
-  projectName: string
   theaterMode?: boolean
   onToggleTheater?: () => void
 }
 
 export function ProjectArchitectureCanvas({
   projectId,
-  projectName,
   theaterMode = false,
   onToggleTheater,
 }: ProjectArchitectureCanvasProps) {
   return (
     <PageShell $theater={theaterMode}>
-      {!theaterMode ? (
-        <PersistHintBar>
-          <PersistHintText>
-            Documente serviços, filas e clientes. O layout é persistido por projeto neste
-            aparelho.
-          </PersistHintText>
-          <HelpInfoTooltip
-            ariaLabel="Ajuda: abrir arquivos e subprojetos"
-            tooltipId="architecture-page-files-help"
-          >
-            Duplo-clique em um bloco abre a visão de arquivos (estilo repositório); pela página
-            do projeto você escolhe o subprojeto antes de abrir a mesma tela.
-          </HelpInfoTooltip>
-        </PersistHintBar>
-      ) : null}
       <ReactFlowProvider>
         <ArchitectureFlowWorkbench
           key={projectId}
           projectId={projectId}
-          projectName={projectName}
           theaterMode={theaterMode}
           onToggleTheater={onToggleTheater ?? (() => undefined)}
         />

@@ -265,13 +265,6 @@ export const FilterRow = styled.label`
   }
 `
 
-export const Segmented = styled.div`
-  display: flex;
-  border-radius: 0.4rem;
-  overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.border};
-`
-
 export const InlineLabel = styled.label`
   display: block;
   margin-bottom: 0.35rem;
@@ -313,23 +306,6 @@ export const SmallInput = styled.input`
     outline: none;
     border-color: ${({ theme }) => theme.primary};
     box-shadow: 0 0 0 2px ${({ theme }) => theme.primaryMuted};
-  }
-`
-
-export const SegmentBtn = styled.button<{ $active?: boolean }>`
-  flex: 1;
-  padding: 0.35rem 0.4rem;
-  font-size: 0.68rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  background: ${({ $active, theme }) =>
-    $active ? theme.primaryMuted : theme.surface};
-  color: ${({ $active, theme }) => ($active ? theme.primary : theme.textMuted)};
-  transition: background 0.15s ease;
-
-  &:hover {
-    background: ${({ theme }) => theme.surfaceHover};
   }
 `
 
@@ -450,7 +426,7 @@ export const AddBlockWrap = styled.div`
 
 export const AddBlockPopover = styled.div<{ $open: boolean }>`
   position: absolute;
-  top: calc(100% + 0.35rem);
+  top: 100%;
   left: 0;
   z-index: 12;
   width: min(17rem, 56vw);
@@ -462,7 +438,7 @@ export const AddBlockPopover = styled.div<{ $open: boolean }>`
   box-shadow: ${({ theme }) => theme.shadow};
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   visibility: ${({ $open }) => ($open ? 'visible' : 'hidden')};
-  transform: translateY(${({ $open }) => ($open ? '0' : '-4px')});
+  transform: translateY(${({ $open }) => ($open ? '0.22rem' : '-0.12rem')});
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
   transition:
     opacity 0.15s ease,

@@ -5,14 +5,17 @@ import {
   SiFastify,
   SiGooglecloud,
   SiKoa,
+  SiMysql,
   SiNestjs,
   SiNextdotjs,
+  SiPostgresql,
   SiVite,
   SiVuedotjs,
 } from 'react-icons/si'
 import { FaAws, FaMicrosoft } from 'react-icons/fa6'
 import type { ComponentType, ReactNode } from 'react'
 import type { ProjectCloudProvider } from '../../data/cloudProviders'
+import type { PrimaryDatabaseType } from '../../data/databaseEngines'
 import type { ArchitectureBlockKind } from './architectureTypes'
 
 export type ArchitectureClientTech = 'vite' | 'nextjs' | 'vuejs' | 'angular'
@@ -23,11 +26,13 @@ export type ArchitectureServiceTech =
   | 'nestjs'
   | 'adonisjs'
 export type ArchitectureQueueTech = 'aws-sqs' | 'gcp-pubsub' | 'azure-service-bus'
+export type ArchitectureDatabaseTech = 'mysql' | 'psql' | 'mssql'
 
 export type ArchitectureRuntimeTech =
   | ArchitectureClientTech
   | ArchitectureServiceTech
   | ArchitectureQueueTech
+  | ArchitectureDatabaseTech
 
 export const ARCH_CLIENT_TECHS: ArchitectureClientTech[] = [
   'vite',
@@ -47,6 +52,11 @@ export const ARCH_QUEUE_TECHS: ArchitectureQueueTech[] = [
   'gcp-pubsub',
   'azure-service-bus',
 ]
+export const ARCH_DATABASE_TECHS: ArchitectureDatabaseTech[] = [
+  'mysql',
+  'psql',
+  'mssql',
+]
 
 const TECH_LABEL: Record<ArchitectureRuntimeTech, string> = {
   vite: 'Vite',
@@ -61,6 +71,9 @@ const TECH_LABEL: Record<ArchitectureRuntimeTech, string> = {
   'aws-sqs': 'AWS SQS',
   'gcp-pubsub': 'GCP Pub/Sub',
   'azure-service-bus': 'Azure Service Bus',
+  mysql: 'MySQL',
+  psql: 'psql',
+  mssql: 'MSSQL',
 }
 
 const TECH_ICON = {
@@ -76,6 +89,9 @@ const TECH_ICON = {
   'aws-sqs': FaAws,
   'gcp-pubsub': SiGooglecloud,
   'azure-service-bus': FaMicrosoft,
+  mysql: SiMysql,
+  psql: SiPostgresql,
+  mssql: FaMicrosoft,
 } satisfies Record<ArchitectureRuntimeTech, ComponentType<{ size?: number }>>
 
 const TECH_FROM_HINT: Record<string, ArchitectureRuntimeTech> = {
@@ -102,6 +118,11 @@ const TECH_FROM_HINT: Record<string, ArchitectureRuntimeTech> = {
   'google pubsub': 'gcp-pubsub',
   'azure service bus': 'azure-service-bus',
   servicebus: 'azure-service-bus',
+  mysql: 'mysql',
+  postgresql: 'psql',
+  psql: 'psql',
+  mssql: 'mssql',
+  'sql server': 'mssql',
 }
 
 function defaultQueueTechForCloud(cloud: ProjectCloudProvider): ArchitectureQueueTech {
@@ -110,13 +131,21 @@ function defaultQueueTechForCloud(cloud: ProjectCloudProvider): ArchitectureQueu
   return 'aws-sqs'
 }
 
+function defaultDatabaseTechForProject(db: PrimaryDatabaseType): ArchitectureDatabaseTech {
+  if (db === 'postgresql') return 'psql'
+  if (db === 'mssql') return 'mssql'
+  return 'mysql'
+}
+
 export function defaultTechForKind(
   kind: ArchitectureBlockKind,
   projectCloud: ProjectCloudProvider = 'aws',
+  projectPrimaryDatabase: PrimaryDatabaseType = 'mysql',
 ): ArchitectureRuntimeTech | undefined {
   if (kind === 'client') return 'vite'
   if (kind === 'service') return 'fastify'
   if (kind === 'queue') return defaultQueueTechForCloud(projectCloud)
+  if (kind === 'database') return defaultDatabaseTechForProject(projectPrimaryDatabase)
   return undefined
 }
 
@@ -143,6 +172,7 @@ export function allowedTechsForKind(kind: ArchitectureBlockKind): ArchitectureRu
   if (kind === 'client') return ARCH_CLIENT_TECHS
   if (kind === 'service') return ARCH_SERVICE_TECHS
   if (kind === 'queue') return ARCH_QUEUE_TECHS
+  if (kind === 'database') return ARCH_DATABASE_TECHS
   return []
 }
 
@@ -155,9 +185,10 @@ export function normalizeTechForNode(
   tech?: ArchitectureRuntimeTech,
   techHint?: string,
   projectCloud: ProjectCloudProvider = 'aws',
+  projectPrimaryDatabase: PrimaryDatabaseType = 'mysql',
 ): ArchitectureRuntimeTech | undefined {
   if (tech && isAllowedForKind(kind, tech)) return tech
   const byHint = techHint ? TECH_FROM_HINT[techHint.trim().toLowerCase()] : undefined
   if (byHint && isAllowedForKind(kind, byHint)) return byHint
-  return defaultTechForKind(kind, projectCloud)
+  return defaultTechForKind(kind, projectCloud, projectPrimaryDatabase)
 }

@@ -109,6 +109,7 @@ const edgeTypes = { relationshipStep: RelationshipStepEdge }
 
 const PERSIST_DEBOUNCE_MS = 450
 const ALL_SCHEMAS_FILTER = '__all__'
+const THEATER_STORAGE_KEY = 'flow-theater-mode:modeling'
 
 function defaultSchemaByEngine(engine: string): string {
   if (engine === 'postgresql') return 'public'
@@ -987,7 +988,21 @@ export function DatabaseModeling() {
   )
   const { primaryDatabase } = useProjectPrimaryDatabase(projectId)
   const { primaryColor } = useProjectPrimaryColor(projectId)
-  const [theaterMode, setTheaterMode] = useState(false)
+  const [theaterMode, setTheaterMode] = useState(() => {
+    try {
+      return localStorage.getItem(THEATER_STORAGE_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(THEATER_STORAGE_KEY, theaterMode ? '1' : '0')
+    } catch (err) {
+      console.warn('[modelagem] Não foi possível persistir modo teatro:', err)
+    }
+  }, [theaterMode])
 
   if (!projectId) {
     return <Navigate to="/projects" replace />

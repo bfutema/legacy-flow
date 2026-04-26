@@ -17,6 +17,7 @@ function nodesForProject(projectId: string): Node[] {
 export function listArchitectureBlocks(projectId: string): ArchitectureBlockSummary[] {
   return nodesForProject(projectId)
     .filter((n) => n.type === 'architectureBlock')
+    .filter((n) => (n.data as ArchitectureBlockNodeData).kind !== 'database')
     .map((n) => ({
       nodeId: n.id,
       data: n.data as ArchitectureBlockNodeData,

@@ -7,6 +7,7 @@ import {
   techLabel,
 } from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import { resolveProjectById } from '../../data/projects'
+import { useProjectPrimaryDatabase } from '../../hooks/useProjectPrimaryDatabase'
 import { getEffectiveProjectPrimaryColor } from '../../hooks/useProjectPrimaryColor'
 import { useProjectCloud } from '../../hooks/useProjectCloud'
 import { listArchitectureBlocks } from './architectureBlocksLoader'
@@ -26,6 +27,7 @@ export function SubprojectFilesHubPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const [refreshTick, setRefreshTick] = useState(0)
   const { projectCloud } = useProjectCloud(projectId)
+  const { primaryDatabase } = useProjectPrimaryDatabase(projectId)
 
   useEffect(() => {
     const bump = () => setRefreshTick((n) => n + 1)
@@ -80,6 +82,7 @@ export function SubprojectFilesHubPage() {
               b.data.runtime,
               b.data.techHint,
               b.data.projectCloud ?? projectCloud,
+              b.data.projectPrimaryDatabase ?? primaryDatabase,
             )
             const label = techLabel(tech)
             return (
