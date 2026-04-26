@@ -90,8 +90,15 @@ export const KindBadge = styled.span<{ $kind: ArchitectureBlockKind }>`
 
 export const TechHint = styled.div`
   margin-top: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
   font-size: 0.6875rem;
   color: ${({ theme }) => theme.textMuted};
+
+  svg {
+    flex-shrink: 0;
+  }
 `
 
 export const SlugRow = styled.div`

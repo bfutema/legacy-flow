@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { ARCHITECTURE_KIND_LABEL } from '../../components/ProjectArchitectureCanvas/architectureKindMeta'
+import {
+  normalizeTechForNode,
+  renderTechIcon,
+  techLabel,
+} from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import { resolveProjectById } from '../../data/projects'
+import { getEffectiveProjectPrimaryColor } from '../../hooks/useProjectPrimaryColor'
 import { listArchitectureBlocks } from './architectureBlocksLoader'
 import {
   BackLinkStyled,
@@ -49,6 +55,8 @@ export function SubprojectFilesHubPage() {
     return <Navigate to="/projects" replace />
   }
 
+  const projectAccent = getEffectiveProjectPrimaryColor(project)
+
   return (
     <ModelingPageRoot>
       <BackLinkStyled to={`/projects/${project.id}`}>← Voltar ao projeto</BackLinkStyled>
@@ -64,15 +72,27 @@ export function SubprojectFilesHubPage() {
         </HubEmpty>
       ) : (
         <HubGrid>
-          {blocks.map((b) => (
-            <HubCard key={b.nodeId} to={`/projects/${project.id}/subproject-files/${b.nodeId}`}>
-              <HubCardTitle>{b.data.label}</HubCardTitle>
-              <HubCardMeta>
-                {ARCHITECTURE_KIND_LABEL[b.data.kind]}
-                {b.data.slug ? ` · ${b.data.slug}` : ''}
-              </HubCardMeta>
-            </HubCard>
-          ))}
+          {blocks.map((b) => {
+            const tech = normalizeTechForNode(b.data.kind, b.data.runtime, b.data.techHint)
+            const label = techLabel(tech)
+            return (
+              <HubCard
+                key={b.nodeId}
+                $accent={projectAccent}
+                to={`/projects/${project.id}/subproject-files/${b.nodeId}`}
+              >
+                <HubCardTitle>
+                  {renderTechIcon(tech, 14)}
+                  {b.data.label}
+                </HubCardTitle>
+                <HubCardMeta>
+                  {ARCHITECTURE_KIND_LABEL[b.data.kind]}
+                  {label ? ` · ${label}` : ''}
+                  {b.data.slug ? ` · ${b.data.slug}` : ''}
+                </HubCardMeta>
+              </HubCard>
+            )
+          })}
         </HubGrid>
       )}
     </ModelingPageRoot>

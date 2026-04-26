@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type MouseEvent,
+  type MouseEvent as ReactMouseEvent,
 } from 'react'
 import {
   addEdge,
@@ -31,6 +31,12 @@ import { useTheme } from 'styled-components'
 import { HelpInfoTooltip } from '../HelpInfoTooltip/HelpInfoTooltip'
 import { FsButton } from '../../pages/DatabaseModeling.styles'
 import {
+  allowedTechsForKind,
+  defaultTechForKind,
+  normalizeTechForNode,
+  techLabel,
+} from './architectureTechMeta'
+import {
   loadArchitectureFlow,
   saveArchitectureFlow,
 } from '../../persistence/architectureFlowStorage'
@@ -46,10 +52,15 @@ import { createDemoArchitectureNodes } from './demoInitialArchitecture'
 import { LabeledArchitectureEdge } from './edges/LabeledArchitectureEdge'
 import { ArchitectureBlockNode } from './nodes/ArchitectureBlockNode'
 import {
-  AddBlockMenu,
+  AddBlockList,
+  AddBlockOption,
+  AddBlockPopover,
+  AddBlockSearch,
+  AddBlockWrap,
   FilterRow,
   FlowHost,
   FoldSectionHead,
+  InlineLabel,
   PageShell,
   PersistHintBar,
   PersistHintText,
@@ -61,11 +72,11 @@ import {
   RailTitleWithHelp,
   SegmentBtn,
   Segmented,
+  SmallSelect,
   SideRail,
   StatusDot,
   StatusStrip,
   StatusStrong,
-  TinyButton,
   TopLeftPanel,
   TopToolbarRow,
 } from './ProjectArchitectureCanvas.styles'
@@ -101,6 +112,9 @@ function ArchitectureFlowWorkbench({
   const didFitRef = useRef(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [addPanelOpen, setAddPanelOpen] = useState(false)
+  const [addQuery, setAddQuery] = useState('')
+  const addPanelRef = useRef<HTMLDivElement>(null)
 
   const initial = useMemo(() => {
     const saved = loadArchitectureFlow(projectId)
@@ -114,6 +128,32 @@ function ArchitectureFlowWorkbench({
   const [visibleKinds, setVisibleKinds] =
     useState<Record<ArchitectureBlockKind, boolean>>(defaultKindVisibility)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const selectedNode = useMemo(
+    () => nodes.find((n) => n.id === selectedNodeId && n.type === 'architectureBlock'),
+    [nodes, selectedNodeId],
+  )
+  const selectedBlockData = useMemo(
+    () =>
+      selectedNode && selectedNode.type === 'architectureBlock'
+        ? (selectedNode.data as ArchitectureBlockNodeData)
+        : undefined,
+    [selectedNode],
+  )
+  const selectedBlockTech = useMemo(() => {
+    if (!selectedBlockData) return undefined
+    return normalizeTechForNode(
+      selectedBlockData.kind,
+      selectedBlockData.runtime,
+      selectedBlockData.techHint,
+    )
+  }, [selectedBlockData])
+  const filteredKinds = useMemo(() => {
+    const q = addQuery.trim().toLowerCase()
+    if (!q) return ALL_ARCHITECTURE_KINDS
+    return ALL_ARCHITECTURE_KINDS.filter((kind) =>
+      ARCHITECTURE_KIND_LABEL[kind].toLowerCase().includes(q),
+    )
+  }, [addQuery])
 
   useEffect(() => {
     const sync = () =>
@@ -121,6 +161,19 @@ function ArchitectureFlowWorkbench({
     document.addEventListener('fullscreenchange', sync)
     return () => document.removeEventListener('fullscreenchange', sync)
   }, [])
+
+  useEffect(() => {
+    if (!addPanelOpen) return
+    const onPointer = (ev: MouseEvent) => {
+      const target = ev.target as HTMLElement | null
+      if (!target || !addPanelRef.current) return
+      if (!addPanelRef.current.contains(target)) {
+        setAddPanelOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onPointer)
+    return () => document.removeEventListener('mousedown', onPointer)
+  }, [addPanelOpen])
 
   const toggleFullscreen = useCallback(() => {
     const el = hostRef.current
@@ -243,7 +296,7 @@ function ArchitectureFlowWorkbench({
   )
 
   const onNodeDoubleClick = useCallback(
-    (_: MouseEvent, node: Node) => {
+    (_: ReactMouseEvent, node: Node) => {
       if (node.type !== 'architectureBlock') return
       navigate(`/projects/${projectId}/subproject-files/${node.id}`)
     },
@@ -267,6 +320,7 @@ function ArchitectureFlowWorkbench({
         y: window.innerHeight * 0.36,
       })
       const labelBase = ARCHITECTURE_KIND_LABEL[kind]
+      const runtime = defaultTechForKind(kind)
       const newNode: Node<ArchitectureBlockNodeData> = {
         id,
         type: 'architectureBlock',
@@ -275,7 +329,8 @@ function ArchitectureFlowWorkbench({
           projectId,
           label: `${labelBase} novo`,
           kind,
-          techHint: '',
+          runtime,
+          techHint: runtime ? techLabel(runtime) : '',
           slug: `${kind}-${id.slice(-6)}`,
           generatedPaths: [
             '… estrutura será gerada pela CLI / backend (em breve)',
@@ -283,8 +338,31 @@ function ArchitectureFlowWorkbench({
         },
       }
       setNodes((nds) => [...nds, newNode])
+      setAddPanelOpen(false)
+      setAddQuery('')
     },
     [projectId, screenToFlowPosition, setNodes],
+  )
+
+  const updateSelectedRuntime = useCallback(
+    (runtime: string) => {
+      if (!selectedNodeId) return
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== selectedNodeId || n.type !== 'architectureBlock') return n
+          const data = n.data as ArchitectureBlockNodeData
+          return {
+            ...n,
+            data: {
+              ...data,
+              runtime: runtime as ArchitectureBlockNodeData['runtime'],
+              techHint: techLabel(runtime as ArchitectureBlockNodeData['runtime']) ?? data.techHint,
+            },
+          }
+        }),
+      )
+    },
+    [selectedNodeId, setNodes],
   )
 
   const nodeCount = visibleNodeIds.size
@@ -371,20 +449,61 @@ function ArchitectureFlowWorkbench({
                     </>
                   )}
                 </FsButton>
-              </TopToolbarRow>
-              <AddBlockMenu>
-                {ALL_ARCHITECTURE_KINDS.map((kind) => (
-                  <TinyButton
-                    key={kind}
+                <AddBlockWrap
+                  ref={addPanelRef}
+                  className="nodrag nopan"
+                  onMouseEnter={() => setAddPanelOpen(true)}
+                  onMouseLeave={() => setAddPanelOpen(false)}
+                >
+                  <FsButton
                     type="button"
                     className="nodrag nopan"
-                    title={`Adicionar bloco: ${ARCHITECTURE_KIND_LABEL[kind]}`}
-                    onClick={() => addBlock(kind)}
+                    onClick={() => setAddPanelOpen((v) => !v)}
+                    aria-expanded={addPanelOpen}
+                    aria-controls="add-block-popover"
+                    title="Adicionar bloco de arquitetura"
                   >
-                    + {ARCHITECTURE_KIND_LABEL[kind]}
-                  </TinyButton>
-                ))}
-              </AddBlockMenu>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    <span className="fs-btn-label">Adicionar bloco</span>
+                  </FsButton>
+                  <AddBlockPopover id="add-block-popover" $open={addPanelOpen}>
+                    <AddBlockSearch
+                      placeholder="Buscar tipo de bloco..."
+                      value={addQuery}
+                      onChange={(e) => setAddQuery(e.target.value)}
+                      aria-label="Buscar tipo de bloco"
+                    />
+                    <AddBlockList>
+                      {filteredKinds.map((kind) => (
+                        <AddBlockOption
+                          key={kind}
+                          type="button"
+                          onClick={() => addBlock(kind)}
+                          title={`Adicionar bloco: ${ARCHITECTURE_KIND_LABEL[kind]}`}
+                        >
+                          <span>{ARCHITECTURE_KIND_LABEL[kind]}</span>
+                          <span style={{ opacity: 0.65 }}>+{kind}</span>
+                        </AddBlockOption>
+                      ))}
+                      {filteredKinds.length === 0 ? (
+                        <span style={{ fontSize: '0.68rem', opacity: 0.75, padding: '0.25rem' }}>
+                          Nenhum tipo encontrado.
+                        </span>
+                      ) : null}
+                    </AddBlockList>
+                  </AddBlockPopover>
+                </AddBlockWrap>
+              </TopToolbarRow>
             </TopLeftPanel>
           </Panel>
 
@@ -437,6 +556,27 @@ function ArchitectureFlowWorkbench({
                 </SegmentBtn>
               </Segmented>
             </RailSection>
+            {selectedBlockData && ['client', 'service'].includes(selectedBlockData.kind) ? (
+              <RailSection>
+                <RailTitle>Tecnologia do bloco</RailTitle>
+                <InlineLabel htmlFor="arch-runtime-select">
+                  {selectedBlockData.label}
+                </InlineLabel>
+                <SmallSelect
+                  id="arch-runtime-select"
+                  value={
+                    selectedBlockTech ?? allowedTechsForKind(selectedBlockData.kind)[0] ?? ''
+                  }
+                  onChange={(e) => updateSelectedRuntime(e.target.value)}
+                >
+                  {allowedTechsForKind(selectedBlockData.kind).map((tech) => (
+                    <option key={tech} value={tech}>
+                      {techLabel(tech)}
+                    </option>
+                  ))}
+                </SmallSelect>
+              </RailSection>
+            ) : null}
             <RailSection>
               <RailTitleRow>
                 <RailTitleWithHelp>Arquivos do bloco</RailTitleWithHelp>

@@ -1,6 +1,11 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { ARCHITECTURE_KIND_LABEL } from '../architectureKindMeta'
+import {
+  normalizeTechForNode,
+  renderTechIcon,
+  techLabel,
+} from '../architectureTechMeta'
 import type { ArchitectureRfNode } from '../architectureTypes'
 import {
   Body,
@@ -20,6 +25,8 @@ export const ArchitectureBlockNode = memo(function ArchitectureBlockNode({
   selected,
 }: NodeProps<ArchitectureRfNode>) {
   const accent = ARCHITECTURE_KIND_ACCENT[data.kind]
+  const nodeTech = normalizeTechForNode(data.kind, data.runtime, data.techHint)
+  const nodeTechLabel = techLabel(nodeTech)
   return (
     <Root $accent={accent} $selected={selected}>
       <CardInner>
@@ -29,7 +36,12 @@ export const ArchitectureBlockNode = memo(function ArchitectureBlockNode({
             <Title>{data.label}</Title>
             <KindBadge $kind={data.kind}>{ARCHITECTURE_KIND_LABEL[data.kind]}</KindBadge>
           </TitleRow>
-          {data.techHint ? <TechHint>{data.techHint}</TechHint> : null}
+          {nodeTechLabel ? (
+            <TechHint>
+              {renderTechIcon(nodeTech, 11)}
+              {nodeTechLabel}
+            </TechHint>
+          ) : null}
           {data.slug ? <SlugRow title="Slug para codegen / monorepo">{data.slug}</SlugRow> : null}
         </Body>
       </CardInner>

@@ -1,5 +1,6 @@
 import type { Edge, Node } from '@xyflow/react'
 import { MarkerType } from '@xyflow/react'
+import { techLabel } from './architectureTechMeta'
 import type { ArchitectureBlockNodeData, ArchitectureEdgeData } from './architectureTypes'
 
 function block(
@@ -24,7 +25,8 @@ export function createDemoArchitectureNodes(
       projectId,
       label: 'Painel administrativo',
       kind: 'client',
-      techHint: 'React',
+      runtime: 'vite',
+      techHint: techLabel('vite'),
       slug: 'admin-frontend',
       generatedPaths: [
         'apps/admin/package.json',
@@ -36,7 +38,8 @@ export function createDemoArchitectureNodes(
       projectId,
       label: 'API principal',
       kind: 'service',
-      techHint: 'Node / HTTP',
+      runtime: 'fastify',
+      techHint: techLabel('fastify'),
       slug: 'api',
       generatedPaths: [
         'services/api/package.json',

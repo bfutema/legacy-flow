@@ -240,6 +240,30 @@ export const Segmented = styled.div`
   border: 1px solid ${({ theme }) => theme.border};
 `
 
+export const InlineLabel = styled.label`
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const SmallSelect = styled.select`
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+  font-size: 0.72rem;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.primaryMuted};
+  }
+`
+
 export const SegmentBtn = styled.button<{ $active?: boolean }>`
   flex: 1;
   padding: 0.35rem 0.4rem;
@@ -368,33 +392,81 @@ export const RailHintButton = styled.button`
   }
 `
 
-export const AddBlockMenu = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+export const AddBlockWrap = styled.div`
+  position: relative;
 `
 
-export const TinyButton = styled.button`
-  padding: 0.3rem 0.45rem;
-  font-size: 0.65rem;
-  font-weight: 600;
+export const AddBlockPopover = styled.div<{ $open: boolean }>`
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 12;
+  width: min(17rem, 56vw);
+  max-height: min(330px, 48vh);
+  padding: 0.55rem;
+  border-radius: 0.55rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  box-shadow: ${({ theme }) => theme.shadow};
+  opacity: ${({ $open }) => ($open ? 1 : 0)};
+  visibility: ${({ $open }) => ($open ? 'visible' : 'hidden')};
+  transform: translateY(${({ $open }) => ($open ? '0' : '-4px')});
+  pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s ease;
+`
+
+export const AddBlockSearch = styled.input`
+  width: 100%;
+  margin: 0 0 0.45rem;
+  padding: 0.38rem 0.46rem;
   border-radius: 0.35rem;
   border: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme }) => theme.surface};
   color: ${({ theme }) => theme.text};
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
+  font-size: 0.7rem;
 
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.primary};
-    background: ${({ theme }) => theme.primaryMuted};
+  &::placeholder {
+    color: ${({ theme }) => theme.textMuted};
   }
 
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.primaryMuted};
+  }
+`
+
+export const AddBlockList = styled.div`
+  display: grid;
+  gap: 0.3rem;
+  max-height: calc(min(330px, 48vh) - 3.25rem);
+  overflow: auto;
+  padding-right: 0.1rem;
+`
+
+export const AddBlockOption = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.34rem 0.44rem;
+  border-radius: 0.35rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.primary};
+    background: ${({ theme }) => theme.primaryMuted};
   }
 `
 

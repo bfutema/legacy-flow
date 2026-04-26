@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import styled from 'styled-components'
 import { ADMIN_MOBILE_MEDIA } from '../../layouts/adminShellTokens'
 
+const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
 export const PageRoot = styled.div`
   width: 100%;
   display: flex;
@@ -259,40 +261,85 @@ export const TreeRowBtn = styled.button<{ $depth: number; $active?: boolean }>`
 
 export const HubGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(16.5rem, 1fr));
+  gap: 0.95rem;
   width: 100%;
+  margin-top: 0.35rem;
 `
 
-export const HubCard = styled(Link)`
-  display: block;
-  padding: 1rem 1.1rem;
-  border-radius: 0.65rem;
+export const HubCard = styled(Link)<{ $accent: string }>`
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 6.1rem;
+  padding: 1.15rem 1.1rem 1.05rem;
+  border-radius: 0.72rem;
   border: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.surface};
+  background: ${({ theme, $accent }) =>
+    theme.mode === 'dark'
+      ? `linear-gradient(135deg, color-mix(in srgb, ${$accent} 16%, ${theme.surface}) 0%, ${theme.surface} 62%)`
+      : `linear-gradient(135deg, color-mix(in srgb, ${$accent} 12%, ${theme.surface}) 0%, ${theme.surface} 62%)`};
   text-decoration: none;
   color: inherit;
   box-shadow: ${({ theme }) => theme.shadow};
   transition:
-    border-color 0.15s ease,
-    transform 0.2s ease;
+    border-color 0.18s ease,
+    transform 0.24s ${easeOut},
+    box-shadow 0.24s ${easeOut};
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      ${({ $accent }) => $accent},
+      color-mix(in srgb, ${({ $accent }) => $accent} 65%, white)
+    );
+    opacity: 0.9;
+  }
 
   &:hover {
-    border-color: ${({ theme }) => theme.primary};
-    transform: translateY(-2px);
+    border-color: ${({ $accent }) => $accent};
+    transform: translateY(-3px);
+    box-shadow:
+      0 14px 30px color-mix(in srgb, ${({ $accent }) => $accent} 24%, transparent),
+      0 4px 12px rgba(15, 23, 42, 0.16);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ $accent }) => $accent};
+    outline-offset: 2px;
   }
 `
 
 export const HubCardTitle = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
   font-weight: 600;
-  font-size: 0.95rem;
-  margin-bottom: 0.35rem;
+  font-size: 1rem;
   color: ${({ theme }) => theme.text};
+  line-height: 1.3;
+
+  svg {
+    flex-shrink: 0;
+    opacity: 0.92;
+  }
 `
 
 export const HubCardMeta = styled.div`
-  font-size: 0.75rem;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  font-size: 0.74rem;
   color: ${({ theme }) => theme.textMuted};
+  line-height: 1.5;
+  margin-top: auto;
 `
 
 export const HubEmpty = styled.p`
@@ -328,7 +375,8 @@ export const PageTitle = styled.h1`
 `
 
 export const PageDesc = styled.p`
-  margin: 0.25rem 0 0;
+  margin: 0.35rem 0 0;
+  max-width: 64rem;
   font-size: 0.8rem;
   color: ${({ theme }) => theme.textMuted};
   line-height: 1.45;

@@ -1,6 +1,11 @@
 import { memo, useCallback, useMemo, useState } from 'react'
 import { FiFile, FiFolder } from 'react-icons/fi'
 import { ARCHITECTURE_KIND_LABEL } from '../../components/ProjectArchitectureCanvas/architectureKindMeta'
+import {
+  normalizeTechForNode,
+  renderTechIcon,
+  techLabel,
+} from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import type { ArchitectureBlockSummary } from './architectureBlocksLoader'
 import { mockContentForPath } from './mockFileContent'
 import { pathsToTree, type PathTreeNode } from './pathTree'
@@ -135,6 +140,11 @@ export function SubprojectFilesExplorer({ projectId, projectName, block }: Props
   }, [symbols, symQuery])
 
   const lineRows = useMemo(() => content.split('\n'), [content])
+  const blockTech = useMemo(
+    () => normalizeTechForNode(block.data.kind, block.data.runtime, block.data.techHint),
+    [block.data.kind, block.data.runtime, block.data.techHint],
+  )
+  const blockTechLabel = useMemo(() => techLabel(blockTech), [blockTech])
 
   const onPick = useCallback((path: string, file: boolean) => {
     if (file) setSelectedPath(path)
@@ -193,6 +203,19 @@ export function SubprojectFilesExplorer({ projectId, projectName, block }: Props
             <span>
               <strong style={{ color: 'inherit' }}>Preview local</strong> ·{' '}
               {lineRows.length} linhas · {ARCHITECTURE_KIND_LABEL[block.data.kind]}
+              {blockTechLabel ? (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.28rem',
+                    marginLeft: '0.45rem',
+                  }}
+                >
+                  {renderTechIcon(blockTech, 13)}
+                  {blockTechLabel}
+                </span>
+              ) : null}
             </span>
           </MetaBar>
           <TabRow>

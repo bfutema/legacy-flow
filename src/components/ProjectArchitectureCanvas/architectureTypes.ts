@@ -1,4 +1,5 @@
 import type { Node } from '@xyflow/react'
+import type { ArchitectureRuntimeTech } from './architectureTechMeta'
 
 /** Tipos de bloco na vista inicial; novos tipos (cloud etc.) entram aqui depois. */
 export type ArchitectureBlockKind =
@@ -16,6 +17,8 @@ export type ArchitectureBlockNodeData = {
   kind: ArchitectureBlockKind
   /** Texto curto sob o título (ex.: React, Fastify) */
   techHint?: string
+  /** Runtime/framework principal do bloco (cliente/serviço). */
+  runtime?: ArchitectureRuntimeTech
   /** Identificador estável para codegen / monorepo no futuro */
   slug?: string
   /**
