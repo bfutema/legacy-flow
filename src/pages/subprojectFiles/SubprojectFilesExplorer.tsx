@@ -59,6 +59,7 @@ import {
 } from './SubprojectFilesLayout.styles'
 
 const EXPLORER_STORAGE_VERSION = 'v1'
+const MONACO_EDITOR_THEME_STORAGE_KEY = `flow-monaco-editor-theme:${EXPLORER_STORAGE_VERSION}`
 const DRACULA_DARK_THEME = 'flow-dracula-dark'
 const FLOW_DARK_THEME = 'flow-app-dark'
 const FLOW_LIGHT_THEME = 'flow-app-light'
@@ -68,11 +69,32 @@ type ExplorerLocalState = {
   paths: string[]
   fileContents?: Record<string, string>
   lastOpenedFilePath?: string
-  editorTheme?: ExplorerEditorTheme
   selectedPath?: string
   selectedIsFile?: boolean
   treeQuery?: string
   expandedFolders?: string[]
+}
+
+function loadGlobalMonacoEditorTheme(): ExplorerEditorTheme {
+  try {
+    const raw = localStorage.getItem(MONACO_EDITOR_THEME_STORAGE_KEY)
+    if (raw === 'dracula' || raw === 'flow') return raw
+    if (raw) {
+      const parsed = JSON.parse(raw) as unknown
+      if (parsed === 'dracula' || parsed === 'flow') return parsed
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'flow'
+}
+
+function saveGlobalMonacoEditorTheme(theme: ExplorerEditorTheme): void {
+  try {
+    localStorage.setItem(MONACO_EDITOR_THEME_STORAGE_KEY, theme)
+  } catch {
+    /* ignore */
+  }
 }
 
 function storageKey(projectId: string, nodeId: string): string {
@@ -421,7 +443,7 @@ export function SubprojectFilesExplorer({
   const [paths, setPaths] = useState<string[]>([])
   const [fileContents, setFileContents] = useState<Record<string, string>>({})
   const [lastOpenedFilePath, setLastOpenedFilePath] = useState('')
-  const [editorTheme, setEditorTheme] = useState<ExplorerEditorTheme>('dracula')
+  const [editorTheme, setEditorTheme] = useState<ExplorerEditorTheme>(loadGlobalMonacoEditorTheme)
   const [treeQuery, setTreeQuery] = useState('')
   const [selectedPath, setSelectedPath] = useState('')
   const [selectedIsFile, setSelectedIsFile] = useState(true)
@@ -443,7 +465,6 @@ export function SubprojectFilesExplorer({
           setPaths(parsed.paths)
           setFileContents(parsed.fileContents ?? {})
           setLastOpenedFilePath(parsed.lastOpenedFilePath ?? '')
-          setEditorTheme(parsed.editorTheme ?? 'dracula')
           setSelectedPath(parsed.selectedPath ?? '')
           setSelectedIsFile(parsed.selectedIsFile ?? true)
           setTreeQuery(parsed.treeQuery ?? '')
@@ -458,7 +479,6 @@ export function SubprojectFilesExplorer({
     setPaths(block.data.generatedPaths ?? [])
     setFileContents({})
     setLastOpenedFilePath('')
-    setEditorTheme('dracula')
     setSelectedPath('')
     setSelectedIsFile(true)
     setTreeQuery('')
@@ -472,7 +492,6 @@ export function SubprojectFilesExplorer({
       paths,
       fileContents,
       lastOpenedFilePath,
-      editorTheme,
       selectedPath,
       selectedIsFile,
       treeQuery,
@@ -483,7 +502,6 @@ export function SubprojectFilesExplorer({
     paths,
     fileContents,
     lastOpenedFilePath,
-    editorTheme,
     projectId,
     block.nodeId,
     selectedPath,
@@ -492,6 +510,10 @@ export function SubprojectFilesExplorer({
     expandedFolders,
     storageReady,
   ])
+
+  useEffect(() => {
+    saveGlobalMonacoEditorTheme(editorTheme)
+  }, [editorTheme])
 
   useEffect(() => {
     const sync = () => setIsFullscreen(document.fullscreenElement === shellRef.current)
