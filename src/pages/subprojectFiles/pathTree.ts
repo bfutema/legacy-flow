@@ -33,7 +33,9 @@ export function pathsToTree(paths: string[]): PathTreeNode[] {
   for (const raw of paths) {
     const t = raw.trim()
     if (!t || t.startsWith('…')) continue
-    const parts = t.split('/').filter(Boolean)
+    const explicitDir = t.endsWith('/')
+    const clean = explicitDir ? t.slice(0, -1) : t
+    const parts = clean.split('/').filter(Boolean)
     if (parts.length === 0) continue
 
     let level = root
@@ -52,9 +54,13 @@ export function pathsToTree(paths: string[]): PathTreeNode[] {
         }
         level.set(name, node)
       }
-      if (isLast) {
+      if (isLast && !explicitDir) {
         node.file = true
-        node.fullPath = t
+        node.fullPath = clean
+      }
+      if (isLast && explicitDir) {
+        node.file = false
+        node.fullPath = `${clean}/`
       }
       prefix = fullPath
       level = node.children

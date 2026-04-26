@@ -10,9 +10,19 @@ import {
 } from './SubprojectFilesLayout.styles'
 import { ModelingPageRoot } from '../DatabaseModeling.styles'
 
+const THEATER_STORAGE_KEY = 'flow-theater-mode:subproject-files'
+
 export function SubprojectFilesViewPage() {
   const { projectId, nodeId } = useParams<{ projectId: string; nodeId: string }>()
   const [refreshTick, setRefreshTick] = useState(0)
+  const [theaterMode, setTheaterMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem(THEATER_STORAGE_KEY) === '1'
+  })
+
+  useEffect(() => {
+    window.localStorage.setItem(THEATER_STORAGE_KEY, theaterMode ? '1' : '0')
+  }, [theaterMode])
 
   useEffect(() => {
     const bump = () => setRefreshTick((n) => n + 1)
@@ -50,20 +60,26 @@ export function SubprojectFilesViewPage() {
   }
 
   return (
-    <ModelingPageRoot>
-      <BackLinkStyled to={`/projects/${project.id}/subproject-files`}>
-        ← Todos os subprojetos
-      </BackLinkStyled>
-      <PageTitle>{block.data.label}</PageTitle>
-      <PageDesc>
-        {block.data.slug ? `Slug: ${block.data.slug} · ` : null}
-        Visualização estilo repositório (preview). Duplo-clique em um bloco no diagrama de
-        arquitetura também abre esta tela.
-      </PageDesc>
+    <ModelingPageRoot $theater={theaterMode}>
+      {!theaterMode ? (
+        <>
+          <BackLinkStyled to={`/projects/${project.id}/subproject-files`}>
+            ← Todos os subprojetos
+          </BackLinkStyled>
+          <PageTitle>{block.data.label}</PageTitle>
+          <PageDesc>
+            {block.data.slug ? `Slug: ${block.data.slug} · ` : null}
+            Visualização estilo repositório (preview). Duplo-clique em um bloco no diagrama de
+            arquitetura também abre esta tela.
+          </PageDesc>
+        </>
+      ) : null}
       <SubprojectFilesExplorer
         projectId={project.id}
         projectName={project.name}
         block={block}
+        theaterMode={theaterMode}
+        onToggleTheater={() => setTheaterMode((v) => !v)}
       />
     </ModelingPageRoot>
   )

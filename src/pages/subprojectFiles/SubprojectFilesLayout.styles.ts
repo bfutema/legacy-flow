@@ -1,33 +1,56 @@
 import { Link } from 'react-router-dom'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import { ADMIN_MOBILE_MEDIA } from '../../layouts/adminShellTokens'
 
 const easeOut = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
-export const PageRoot = styled.div`
+export const PageRoot = styled.div<{ $theater?: boolean }>`
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   min-height: 0;
+
+  ${({ $theater }) =>
+    $theater
+      ? css`
+          flex: 1;
+          gap: 0;
+          height: 100%;
+        `
+      : ''}
 `
 
-export const Shell = styled.div`
+export const Shell = styled.div<{ $theater?: boolean }>`
   display: grid;
   grid-template-columns: minmax(200px, 15rem) minmax(0, 1fr) minmax(0, 13rem);
   gap: 0;
   width: 100%;
   min-height: clamp(420px, calc(100dvh - 13rem), 880px);
-  border-radius: 0.65rem;
+  border-radius: 0.55rem;
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.surface};
+  background: ${({ theme }) => (theme.mode === 'dark' ? '#111827' : theme.surface)};
   box-shadow: ${({ theme }) => theme.shadow};
 
   @media (max-width: 960px) {
     grid-template-columns: minmax(0, 1fr);
     min-height: clamp(360px, calc(100dvh - 12rem), 900px);
   }
+
+  ${({ $theater }) =>
+    $theater
+      ? css`
+          flex: 1;
+          min-height: 0;
+          height: 100%;
+          border-radius: 0;
+          border-left: none;
+          border-right: none;
+          border-bottom: none;
+          box-shadow: none;
+        `
+      : ''}
 `
 
 export const TreeColumn = styled.aside`
@@ -46,6 +69,10 @@ export const TreeColumn = styled.aside`
 `
 
 export const TreeHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
   padding: 0.55rem 0.65rem;
   border-bottom: 1px solid ${({ theme }) => theme.border};
   font-size: 0.72rem;
@@ -53,6 +80,31 @@ export const TreeHeader = styled.div`
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.textMuted};
+`
+
+export const TreeHeaderActions = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+`
+
+export const TreeHeaderIconBtn = styled.button`
+  width: 1.65rem;
+  height: 1.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.34rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: ${({ theme }) => theme.textMuted};
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.text};
+    border-color: ${({ theme }) => theme.border};
+    background: ${({ theme }) => theme.surface};
+  }
 `
 
 export const TreeSearch = styled.input`
@@ -136,6 +188,33 @@ export const MetaBar = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.border};
   font-size: 0.72rem;
   color: ${({ theme }) => theme.textMuted};
+`
+
+export const ToolbarBtn = styled.button<{ $danger?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  border: 1px solid
+    ${({ $danger, theme }) => ($danger ? 'rgba(239, 68, 68, 0.45)' : theme.border)};
+  background: ${({ $danger, theme }) =>
+    $danger
+      ? theme.mode === 'dark'
+        ? 'rgba(127, 29, 29, 0.4)'
+        : 'rgba(254, 226, 226, 0.9)'
+      : theme.mode === 'dark'
+        ? 'rgba(30, 41, 59, 0.78)'
+        : theme.surface};
+  color: ${({ $danger, theme }) => ($danger ? '#ef4444' : theme.text)};
+  font-size: 0.73rem;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 0.42rem;
+  padding: 0.36rem 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ $danger, theme }) => ($danger ? '#ef4444' : theme.primary)};
+  }
 `
 
 export const TabRow = styled.div`
@@ -257,6 +336,121 @@ export const TreeRowBtn = styled.button<{ $depth: number; $active?: boolean }>`
   &:hover {
     background: ${({ theme }) => theme.surfaceHover};
   }
+`
+
+export const TreeFoldBtn = styled.button`
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.textMuted};
+  cursor: pointer;
+`
+
+export const TreeFoldSpacer = styled.span`
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  display: inline-block;
+`
+
+export const TreeInlineInput = styled.input`
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  color: ${({ theme }) => theme.text};
+  background: ${({ theme }) => theme.surface};
+  border: 1px solid ${({ theme }) => theme.primary};
+  border-radius: 0.3rem;
+  padding: 0.14rem 0.3rem;
+  outline: none;
+`
+
+export const TreeRowWrap = styled.div`
+  position: relative;
+
+  &:hover > [data-tree-actions='true'] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+`
+
+export const TreeRowActions = styled.div`
+  position: absolute;
+  right: 0.28rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  gap: 0.18rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+  padding-left: 0.3rem;
+  background: linear-gradient(90deg, transparent, ${({ theme }) => theme.surface} 40%);
+`
+
+export const TreeActionBtn = styled.button<{ $danger?: boolean }>`
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 0.3rem;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => (theme.mode === 'dark' ? 'rgba(15, 23, 42, 0.92)' : theme.surface)};
+  color: ${({ $danger, theme }) => ($danger ? '#ef4444' : theme.textMuted)};
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ $danger, theme }) => ($danger ? '#ef4444' : theme.primary)};
+    color: ${({ $danger, theme }) => ($danger ? '#ef4444' : theme.text)};
+  }
+`
+
+export const ModalBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.58);
+  display: grid;
+  place-items: center;
+  z-index: 1400;
+`
+
+export const ConfirmModal = styled.div`
+  width: min(28rem, calc(100vw - 2rem));
+  border-radius: 0.62rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  box-shadow: 0 24px 50px rgba(2, 6, 23, 0.35);
+  padding: 0.9rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+`
+
+export const ConfirmTitle = styled.h3`
+  margin: 0;
+  font-size: 0.92rem;
+`
+
+export const ConfirmText = styled.p`
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const ConfirmActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
 `
 
 export const HubGrid = styled.div`
