@@ -36,12 +36,19 @@ import { useModelingDiagramStats } from '../hooks/useModelingDiagramStats'
 import { useProjectCloud } from '../hooks/useProjectCloud'
 import { useProjectMonorepo } from '../hooks/useProjectMonorepo'
 import { useProjectPrimaryDatabase } from '../hooks/useProjectPrimaryDatabase'
+import { loadAllocationsGanttProjects } from '../persistence/allocationsGanttStorage'
 import { loadArchitectureFlow } from '../persistence/architectureFlowStorage'
 import { HelpInfoTooltip } from '../components/HelpInfoTooltip/HelpInfoTooltip'
 import { TrashDeleteButton } from '../components/TrashDeleteButton/TrashDeleteButton'
 import { PageHeader } from '../layouts/PageHeader'
 import { listArchitectureBlocks } from './subprojectFiles/architectureBlocksLoader'
 import {
+  AllocationBarFill,
+  AllocationBarTrack,
+  AllocationName,
+  AllocationRow,
+  AllocationRows,
+  AllocationValue,
   BackLink,
   DbLabelInRow,
   DbLabelRow,
@@ -49,21 +56,25 @@ import {
   DetailMain,
   DetailMainColumn,
   DetailSideColumn,
-  DiagramCard,
-  DiagramCardTitle,
-  DiagramChartBox,
   DiagramHint,
-  MiniChartCard,
-  MiniChartTitle,
-  MiniChartWrap,
+  HeroStatCard,
+  HeroStatLabel,
+  HeroStatsGrid,
+  HeroStatValue,
   PanelDbSettingRow,
   PanelDivider,
   PanelSectionLabel,
+  ProjectAllocationsScroll,
+  ProjectAllocationsSection,
+  ProjectAllocationsTitle,
+  ProjectChartSlot,
+  ProjectChartSlotBox,
+  ProjectChartsStrip,
+  ProjectChartSlotTitle,
   ProjectDetailRoot,
-  SecondaryChartsGrid,
+  ProjectOverviewShell,
+  ProjectOverviewTitle,
   SideOverviewPanel,
-  StatPill,
-  StatRowMini,
   WorkspaceNavChevron,
   WorkspaceNavIconWrap,
   WorkspaceNavLinkArchitecture,
@@ -122,12 +133,24 @@ const iconFiles = (
   </svg>
 )
 
+type ProjectChartTab = 'modeling' | 'architecture' | 'coverage'
+const CHART_TAB_ORDER: ProjectChartTab[] = ['modeling', 'architecture', 'coverage']
+
 export function ProjectDetail() {
   const theme = useTheme()
   const ability = useAbility(AbilityContext)
   const navigate = useNavigate()
   const { projectId } = useParams<{ projectId: string }>()
   const [infoTick, setInfoTick] = useState(0)
+  const [activeChart, setActiveChart] = useState<ProjectChartTab>('modeling')
+  const getChartPosition = (tab: ProjectChartTab): 'left' | 'right' | 'center' => {
+    const activeIdx = CHART_TAB_ORDER.indexOf(activeChart)
+    const tabIdx = CHART_TAB_ORDER.indexOf(tab)
+    if (tabIdx < activeIdx) return 'left'
+    if (tabIdx > activeIdx) return 'right'
+    return 'center'
+  }
+
   const canUpdateProject = ability.can('update', 'Project')
   const canDeleteProject = ability.can('delete', 'Project')
 
@@ -152,7 +175,6 @@ export function ProjectDetail() {
   const { projectCloud, setProjectCloud } = useProjectCloud(projectId)
   const { isMonorepo, setMultiRepoLayout } = useProjectMonorepo(projectId)
   const { tableCount, relationCount } = useModelingDiagramStats(projectId)
-
   const chartData = useMemo(
     () => [
       { label: 'Tabelas', q: tableCount },
@@ -200,6 +222,30 @@ export function ProjectDetail() {
       { label: 'Com slug', q: withSlug },
     ]
   }, [architectureBlocks, architectureEdgeCount])
+  const withRuntimeCount = useMemo(
+    () => architectureBlocks.filter((b) => Boolean(b.data.runtime)).length,
+    [architectureBlocks],
+  )
+  const projectAllocations = useMemo(() => {
+    if (!projectId) return []
+    const target = loadAllocationsGanttProjects().find((p) => p.id === projectId)
+    if (!target) return []
+    const rows = target.users.map((u) => {
+      const totalDays = u.bars.reduce(
+        (acc, b) => acc + (b.endSerial - b.startSerial + 1),
+        0,
+      )
+      return { id: u.id, name: u.name, totalDays }
+    })
+    const max = rows.reduce((m, r) => (r.totalDays > m ? r.totalDays : m), 0)
+    return rows
+      .sort((a, b) => b.totalDays - a.totalDays)
+      .slice(0, 7)
+      .map((r) => ({
+        ...r,
+        pct: max > 0 ? Math.max(6, Math.round((r.totalDays / max) * 100)) : 0,
+      }))
+  }, [projectId])
 
   if (!projectId) {
     return <Navigate to="/projects" replace />
@@ -235,65 +281,100 @@ export function ProjectDetail() {
           ) : null
         }
       />
+      <HeroStatsGrid>
+        <HeroStatCard>
+          <HeroStatLabel>Subprojetos</HeroStatLabel>
+          <HeroStatValue>{architectureBlocks.length}</HeroStatValue>
+        </HeroStatCard>
+        <HeroStatCard>
+          <HeroStatLabel>Ligações no mapa</HeroStatLabel>
+          <HeroStatValue>{architectureEdgeCount}</HeroStatValue>
+        </HeroStatCard>
+        <HeroStatCard>
+          <HeroStatLabel>Tabelas modeladas</HeroStatLabel>
+          <HeroStatValue>{tableCount}</HeroStatValue>
+        </HeroStatCard>
+        <HeroStatCard>
+          <HeroStatLabel>Blocos com runtime</HeroStatLabel>
+          <HeroStatValue>{withRuntimeCount}</HeroStatValue>
+        </HeroStatCard>
+      </HeroStatsGrid>
       <DetailMain>
         <DetailMainColumn>
-          <DiagramCard>
-            <DiagramCardTitle>Diagrama neste projeto</DiagramCardTitle>
-            <StatRowMini>
-              <StatPill>{tableCount} tabelas</StatPill>
-              <StatPill>{relationCount} relações</StatPill>
-            </StatRowMini>
-            <DiagramChartBox>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  layout="vertical"
-                  margin={{ top: 4, right: 12, left: 4, bottom: 4 }}
+          <ProjectOverviewShell>
+            <ProjectOverviewTitle>Indicadores e alocações</ProjectOverviewTitle>
+            <ProjectChartsStrip>
+              <ProjectChartSlot
+                type="button"
+                $active={activeChart === 'modeling'}
+                onClick={() => setActiveChart('modeling')}
+                aria-expanded={activeChart === 'modeling'}
+                aria-label="Expandir gráfico de modelagem"
+              >
+                <ProjectChartSlotTitle $active={activeChart === 'modeling'}>
+                  Modelagem
+                </ProjectChartSlotTitle>
+                <ProjectChartSlotBox
+                  $active={activeChart === 'modeling'}
+                  $position={getChartPosition('modeling')}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                  <XAxis
-                    type="number"
-                    allowDecimals={false}
-                    tick={{ fill: theme.chartAxis, fontSize: 11 }}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="label"
-                    width={72}
-                    tick={{ fill: theme.chartAxis, fontSize: 11 }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: theme.surface,
-                      border: `1px solid ${theme.border}`,
-                      borderRadius: 8,
-                    }}
-                  />
-                  <Bar
-                    dataKey="q"
-                    name="Quantidade"
-                    fill={theme.primary}
-                    radius={[0, 6, 6, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </DiagramChartBox>
-            <DiagramHint>
-              Dados do diagrama salvo no navegador; se você ainda não editou a
-              modelagem, aparece o modelo inicial de referência.
-            </DiagramHint>
-            <SecondaryChartsGrid>
-              <MiniChartCard>
-                <MiniChartTitle>Arquitetura por tipo</MiniChartTitle>
-                <MiniChartWrap>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={chartData}
+                      layout="vertical"
+                      margin={{ top: 4, right: 8, left: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                      <XAxis
+                        type="number"
+                        allowDecimals={false}
+                        tick={{ fill: theme.chartAxis, fontSize: 10 }}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        width={68}
+                        tick={{ fill: theme.chartAxis, fontSize: 10 }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: theme.surface,
+                          border: `1px solid ${theme.border}`,
+                          borderRadius: 8,
+                        }}
+                      />
+                      <Bar
+                        dataKey="q"
+                        name="Quantidade"
+                        fill={theme.primary}
+                        radius={[0, 6, 6, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ProjectChartSlotBox>
+              </ProjectChartSlot>
+              <ProjectChartSlot
+                type="button"
+                $active={activeChart === 'architecture'}
+                onClick={() => setActiveChart('architecture')}
+                aria-expanded={activeChart === 'architecture'}
+                aria-label="Expandir gráfico de arquitetura"
+              >
+                <ProjectChartSlotTitle $active={activeChart === 'architecture'}>
+                  Arquitetura
+                </ProjectChartSlotTitle>
+                <ProjectChartSlotBox
+                  $active={activeChart === 'architecture'}
+                  $position={getChartPosition('architecture')}
+                >
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={kindChartData}
                         dataKey="q"
                         nameKey="label"
-                        innerRadius={36}
-                        outerRadius={62}
+                        innerRadius={50}
+                        outerRadius={86}
                         paddingAngle={2}
                       >
                         {kindChartData.map((entry) => (
@@ -309,21 +390,35 @@ export function ProjectDetail() {
                       />
                     </PieChart>
                   </ResponsiveContainer>
-                </MiniChartWrap>
-              </MiniChartCard>
-              <MiniChartCard>
-                <MiniChartTitle>Cobertura de arquitetura</MiniChartTitle>
-                <MiniChartWrap>
+                </ProjectChartSlotBox>
+              </ProjectChartSlot>
+              <ProjectChartSlot
+                type="button"
+                $active={activeChart === 'coverage'}
+                onClick={() => setActiveChart('coverage')}
+                aria-expanded={activeChart === 'coverage'}
+                aria-label="Expandir gráfico de cobertura"
+              >
+                <ProjectChartSlotTitle $active={activeChart === 'coverage'}>
+                  Cobertura
+                </ProjectChartSlotTitle>
+                <ProjectChartSlotBox
+                  $active={activeChart === 'coverage'}
+                  $position={getChartPosition('coverage')}
+                >
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={coverageData} margin={{ top: 4, right: 10, left: 0, bottom: 8 }}>
+                    <BarChart
+                      data={coverageData}
+                      margin={{ top: 4, right: 6, left: 0, bottom: 8 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
                       <XAxis
                         dataKey="label"
-                        tick={{ fill: theme.chartAxis, fontSize: 10 }}
+                        tick={{ fill: theme.chartAxis, fontSize: 11 }}
                         interval={0}
-                        angle={-12}
+                        angle={-10}
                         textAnchor="end"
-                        height={42}
+                        height={44}
                       />
                       <YAxis
                         allowDecimals={false}
@@ -339,10 +434,39 @@ export function ProjectDetail() {
                       <Bar dataKey="q" fill={theme.primary} radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                </MiniChartWrap>
-              </MiniChartCard>
-            </SecondaryChartsGrid>
-          </DiagramCard>
+                </ProjectChartSlotBox>
+              </ProjectChartSlot>
+            </ProjectChartsStrip>
+            <DiagramHint style={{ marginTop: '0.65rem' }}>
+              Tabelas e relações da modelagem, tipos de bloco no mapa e métricas de preenchimento
+              (slug, runtime).
+            </DiagramHint>
+            <ProjectAllocationsSection>
+              <ProjectAllocationsTitle>Alocações na timeline</ProjectAllocationsTitle>
+              <ProjectAllocationsScroll>
+                {projectAllocations.length > 0 ? (
+                  <AllocationRows>
+                    {projectAllocations.map((row) => (
+                      <AllocationRow key={row.id}>
+                        <AllocationName title={row.name}>{row.name}</AllocationName>
+                        <AllocationBarTrack aria-hidden>
+                          <AllocationBarFill $pct={row.pct} />
+                        </AllocationBarTrack>
+                        <AllocationValue>{row.totalDays} dias</AllocationValue>
+                      </AllocationRow>
+                    ))}
+                  </AllocationRows>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: theme.textMuted }}>
+                    Sem alocações registradas para este projeto na timeline.
+                  </p>
+                )}
+              </ProjectAllocationsScroll>
+              <DiagramHint style={{ marginTop: '0.65rem', marginBottom: 0 }}>
+                Soma dos dias alocados por pessoa, a partir dos dados salvos em Timeline.
+              </DiagramHint>
+            </ProjectAllocationsSection>
+          </ProjectOverviewShell>
         </DetailMainColumn>
         <DetailSideColumn>
           <SideOverviewPanel>

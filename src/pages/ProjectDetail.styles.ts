@@ -61,7 +61,7 @@ export const ProjectDetailRoot = styled.div`
 /** Gráfico à esquerda, configurações e modelagem à direita. */
 export const DetailMain = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 20rem);
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 22rem);
   gap: 1.5rem;
   align-items: stretch;
   width: 100%;
@@ -75,37 +75,252 @@ export const DetailMain = styled.div`
 export const DetailMainColumn = styled.div`
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-width: 0;
-  min-height: 100%;
+  min-height: 0;
+  gap: 1rem;
+  align-self: stretch;
 `
 
 export const DetailSideColumn = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
   min-width: 0;
-
-  @media (min-width: 901px) {
-    min-height: 100%;
-  }
+  min-height: 0;
+  align-self: stretch;
 `
 
 /** Painel único à direita: configuração + atalhos (evita vários cartões empilhados). */
 export const SideOverviewPanel = styled.div`
-  padding: 1.15rem 1.2rem;
+  flex: 1;
+  min-height: 0;
+  padding: 1.2rem;
   border-radius: 0.9rem;
   background: ${({ theme }) => theme.surface};
   border: 1px solid ${({ theme }) => theme.border};
   box-shadow: ${({ theme }) => theme.shadow};
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1rem;
   min-width: 0;
+`
 
-  @media (min-width: 901px) {
-    flex: 1;
+export const HeroStatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+
+  @media (max-width: 1050px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+export const HeroStatCard = styled.div`
+  padding: 0.95rem 1rem;
+  border-radius: 0.8rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) =>
+    theme.mode === 'dark'
+      ? 'linear-gradient(140deg, rgba(15,23,42,0.68), rgba(15,23,42,0.38))'
+      : 'linear-gradient(140deg, #ffffff, #f8fafc)'};
+  box-shadow: ${({ theme }) => theme.shadow};
+`
+
+export const HeroStatLabel = styled.span`
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textMuted};
+  margin-bottom: 0.3rem;
+`
+
+export const HeroStatValue = styled.strong`
+  display: block;
+  font-size: 1.45rem;
+  line-height: 1;
+  color: ${({ theme }) => theme.text};
+`
+
+/** Painel único à esquerda: preenche a altura da linha do grid (alinhado à coluna direita). */
+export const ProjectOverviewShell = styled.div`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.15rem;
+  border-radius: 0.9rem;
+  background: ${({ theme }) => theme.surface};
+  border: 1px solid ${({ theme }) => theme.border};
+  box-shadow: ${({ theme }) => theme.shadow};
+`
+
+export const ProjectOverviewTitle = styled.h3`
+  margin: 0 0 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+`
+
+/** Três visualizações em faixa — evita grade 2×2 de caixas iguais. */
+export const ProjectChartsStrip = styled.div`
+  display: flex;
+  gap: 0;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.75rem;
+  overflow: hidden;
+  min-height: 260px;
+  background: ${({ theme }) =>
+    theme.mode === 'dark' ? 'rgba(2, 6, 23, 0.35)' : theme.surfaceHover};
+
+  @media (max-width: 1050px) {
+    min-height: 0;
+    flex-direction: column;
+  }
+`
+
+export const ProjectChartSlot = styled.button<{ $active: boolean }>`
+  appearance: none;
+  border: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  padding: ${({ $active }) => ($active ? '0.75rem 0.85rem' : '0.6rem 0.35rem')};
+  min-width: ${({ $active }) => ($active ? '0' : '2.8rem')};
+  flex: ${({ $active }) => ($active ? '1 1 0' : '0 0 2.8rem')};
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  justify-content: ${({ $active }) => ($active ? 'flex-start' : 'center')};
+  align-items: ${({ $active }) => ($active ? 'stretch' : 'center')};
+  border-right: 1px solid ${({ theme }) => theme.border};
+  transition:
+    flex-basis 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.24s ease;
+
+  ${({ $active, theme }) =>
+    !$active
+      ? `background: ${
+          theme.mode === 'dark'
+            ? 'rgba(2, 6, 23, 0.22)'
+            : 'color-mix(in srgb, white 45%, #e2e8f0)'
+        };`
+      : ''}
+
+  &:hover {
+    background: ${({ theme, $active }) =>
+      $active
+        ? theme.mode === 'dark'
+          ? 'rgba(15, 23, 42, 0.25)'
+          : 'rgba(148, 163, 184, 0.12)'
+        : theme.mode === 'dark'
+          ? 'rgba(51, 65, 85, 0.35)'
+          : 'rgba(148, 163, 184, 0.2)'};
+  }
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.primary};
+    outline-offset: -2px;
+  }
+
+  @media (max-width: 1050px) {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0.65rem 0.8rem;
+    border-right: none;
+    border-bottom: 1px solid ${({ theme }) => theme.border};
+    align-items: stretch;
+    justify-content: flex-start;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+`
+
+export const ProjectChartSlotTitle = styled.h4<{ $active: boolean }>`
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textMuted};
+  writing-mode: ${({ $active }) => ($active ? 'horizontal-tb' : 'vertical-rl')};
+  transform: ${({ $active }) => ($active ? 'none' : 'rotate(180deg)')};
+  margin-bottom: ${({ $active }) => ($active ? '0.5rem' : '0')};
+  white-space: nowrap;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+  opacity: ${({ $active }) => ($active ? 1 : 0.92)};
+
+  @media (max-width: 1050px) {
+    writing-mode: horizontal-tb;
+    transform: none;
+    margin-bottom: ${({ $active }) => ($active ? '0.5rem' : '0')};
+  }
+`
+
+/** Altura fixa no estado aberto para manter boa leitura dos gráficos. */
+export const ProjectChartSlotBox = styled.div<{
+  $active: boolean
+  $position: 'left' | 'right' | 'center'
+}>`
+  width: 100%;
+  height: ${({ $active }) => ($active ? '230px' : '0')};
+  min-height: ${({ $active }) => ($active ? '230px' : '0')};
+  overflow: hidden;
+  opacity: 1;
+  visibility: ${({ $active }) => ($active ? 'visible' : 'hidden')};
+  pointer-events: ${({ $active }) => ($active ? 'auto' : 'none')};
+  transform: ${({ $active, $position }) => {
+    if ($active) return 'translateX(0) scale(1)'
+    if ($position === 'left') return 'translateX(-18px) scale(0.985)'
+    if ($position === 'right') return 'translateX(18px) scale(0.985)'
+    return 'translateX(0) scale(0.985)'
+  }};
+  transform-origin: center center;
+  will-change: transform;
+  /* Sem atraso em visibility: antes o gráfico ficava visível enquanto a coluna encolhia. */
+  transition: ${({ $active }) =>
+    $active ? 'transform 0.38s cubic-bezier(0.16, 1, 0.3, 1)' : 'none'};
+`
+
+export const ProjectAllocationsSection = styled.div`
+  flex: 1;
+  min-height: 0;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid ${({ theme }) => theme.border};
+  display: flex;
+  flex-direction: column;
+`
+
+export const ProjectAllocationsTitle = styled.h4`
+  margin: 0 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const ProjectAllocationsScroll = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.15rem;
 `
 
 export const PanelDivider = styled.div`
@@ -437,29 +652,48 @@ export const WorkspaceNavRowLocked = styled.div<{ $variant: WorkspaceNavLockedVa
         )`};
 `
 
-export const DiagramCard = styled.div`
-  flex: 1;
+export const AllocationRows = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 1.25rem 1.35rem;
-  border-radius: 0.9rem;
-  background: ${({ theme }) => theme.surface};
-  border: 1px solid ${({ theme }) => theme.border};
-  box-shadow: ${({ theme }) => theme.shadow};
-  min-height: 0;
+  gap: 0.55rem;
 `
 
-export const DiagramCardTitle = styled.h3`
-  margin: 0 0 0.85rem;
-  font-size: 0.95rem;
-  font-weight: 600;
+export const AllocationRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(80px, 140px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+`
+
+export const AllocationName = styled.span`
+  font-size: 0.74rem;
   color: ${({ theme }) => theme.text};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `
 
-export const DiagramChartBox = styled.div`
-  flex: 1;
-  min-height: 240px;
-  width: 100%;
+export const AllocationBarTrack = styled.div`
+  height: 0.45rem;
+  border-radius: 999px;
+  background: ${({ theme }) =>
+    theme.mode === 'dark' ? 'rgba(148, 163, 184, 0.2)' : theme.surfaceHover};
+  overflow: hidden;
+`
+
+export const AllocationBarFill = styled.span<{ $pct: number }>`
+  display: block;
+  height: 100%;
+  width: ${({ $pct }) => `${$pct}%`};
+  border-radius: inherit;
+  background: ${({ theme }) => theme.primary};
+`
+
+export const AllocationValue = styled.span`
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.textMuted};
+  min-width: 3.5rem;
+  text-align: right;
 `
 
 export const SecondaryChartsGrid = styled.div`
@@ -470,6 +704,103 @@ export const SecondaryChartsGrid = styled.div`
 
   @media (max-width: 1050px) {
     grid-template-columns: 1fr;
+  }
+`
+
+export const InsightsGrid = styled.div`
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+
+  @media (max-width: 1050px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+export const InsightCard = styled.div`
+  padding: 0.95rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) =>
+    theme.mode === 'dark' ? 'rgba(2, 6, 23, 0.45)' : theme.surfaceHover};
+`
+
+export const InsightTitle = styled.h4`
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const TeamStack = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+`
+
+export const TeamAvatar = styled.span`
+  width: 1.95rem;
+  height: 1.95rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.text};
+  background: ${({ theme }) => theme.primaryMuted};
+  border: 1px solid ${({ theme }) => theme.border};
+`
+
+export const TeamName = styled.span`
+  font-size: 0.78rem;
+  color: ${({ theme }) => theme.text};
+  margin-right: 0.55rem;
+`
+
+export const TagCloud = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+`
+
+export const TagChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.26rem 0.58rem;
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.text};
+  background: ${({ theme }) => theme.primaryMuted};
+  border: 1px solid ${({ theme }) => theme.border};
+`
+
+export const ActivityList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`
+
+export const ActivityItem = styled.li`
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: ${({ theme }) => theme.text};
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  small {
+    color: ${({ theme }) => theme.textMuted};
+    font-size: 0.68rem;
+    white-space: nowrap;
   }
 `
 
@@ -514,8 +845,8 @@ export const StatPill = styled.span`
 `
 
 export const DiagramHint = styled.p`
-  margin: 0.75rem 0 0;
-  font-size: 0.78rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.74rem;
   line-height: 1.4;
   color: ${({ theme }) => theme.textMuted};
 `
