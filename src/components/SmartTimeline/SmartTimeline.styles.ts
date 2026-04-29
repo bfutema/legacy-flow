@@ -726,9 +726,9 @@ export const GanttVirtualRowTrack = styled.div<{ $width: number; $height: number
   overflow: hidden;
 `
 
-export const GanttDayBgCell = styled.div<{ $weekend: boolean }>`
+export const GanttDayBgCell = styled.div<{ $weekend: boolean; $interactive?: boolean }>`
   border-right: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme, $weekend }) => ganttWeekendSurface(theme, $weekend)};
   box-sizing: border-box;
-  ${dayCellHoverOverlay}
+  ${({ $interactive }) => ($interactive !== false ? dayCellHoverOverlay : undefined)}
 `

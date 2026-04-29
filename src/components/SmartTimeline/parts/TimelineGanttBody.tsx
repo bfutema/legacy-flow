@@ -307,6 +307,33 @@ export function TimelineGanttBody({
     [canUpdateTimeline],
   )
 
+  const onAddBarAtDay = useCallback(
+    (projectId: string, userId: string, daySerial: number) => {
+      if (!canUpdateTimeline) return
+      setProjects((ps) => {
+        const nextProjects = ps.map((p) => {
+          if (p.id !== projectId) return p
+          const users = p.users.map((u) => {
+            if (u.id !== userId) return u
+            const newBar: MockGanttBar = {
+              startSerial: daySerial,
+              endSerial: daySerial,
+            }
+            return { ...u, bars: [...u.bars, newBar] }
+          })
+          return {
+            ...p,
+            users,
+            rangeLabel: computeGanttRangeLabel(users, p.rangeLabel),
+          }
+        })
+        saveAllocationsGanttProjects(nextProjects)
+        return nextProjects
+      })
+    },
+    [canUpdateTimeline],
+  )
+
   const onUserColorChange = useCallback(
     (projectId: string, userId: string, color: string) => {
       if (!canUpdateTimeline) return
@@ -385,6 +412,7 @@ export function TimelineGanttBody({
     monthNavLabel,
     shiftViewportByDays,
     getDateForColumn,
+    getSerialForColumn,
   } = useVirtualInfiniteTimelineScroll({ dayWidth })
 
   /** Metade da lane do header para alinhar com a coluna “Projetos” (sem buraco escuro abaixo dos dias da semana). */
@@ -599,6 +627,7 @@ export function TimelineGanttBody({
                       <GanttDayBgCell
                         key={`pg-${project.id}-${startSerial + col}`}
                         $weekend={wk}
+                        $interactive={false}
                         style={{
                           position: 'absolute',
                           left: col * dayWidth,
@@ -665,6 +694,7 @@ export function TimelineGanttBody({
                         <GanttDayBgCell
                           key={`ug-${user.id}-${startSerial + col}`}
                           $weekend={wk}
+                          $interactive={canUpdateTimeline}
                           style={{
                             position: 'absolute',
                             left: col * dayWidth,
@@ -672,6 +702,21 @@ export function TimelineGanttBody({
                             width: dayWidth,
                             height: '100%',
                           }}
+                          title={
+                            canUpdateTimeline
+                              ? 'Adicionar alocação neste dia (clique)'
+                              : undefined
+                          }
+                          onClick={
+                            canUpdateTimeline
+                              ? () =>
+                                  onAddBarAtDay(
+                                    project.id,
+                                    user.id,
+                                    getSerialForColumn(col),
+                                  )
+                              : undefined
+                          }
                         />
                       )
                     })}
