@@ -1,0 +1,139 @@
+import {
+  WorkspaceNavChevron,
+  WorkspaceNavIconWrap,
+  WorkspaceNavLinkArchitecture,
+  WorkspaceNavLinkFiles,
+  WorkspaceNavLinkModeling,
+  WorkspaceNavList,
+  WorkspaceNavRowBody,
+  WorkspaceNavRowDesc,
+  WorkspaceNavRowLocked,
+  WorkspaceNavRowTitle,
+} from './ProjectDetail.styles'
+
+const iconDb = (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden
+  >
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+  </svg>
+)
+
+const iconArch = (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden
+  >
+    <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
+    <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
+  </svg>
+)
+
+const iconFiles = (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden
+  >
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+  </svg>
+)
+
+type ProjectWorkspaceNavProps = {
+  projectId: string
+  isMonorepo: boolean
+  canUpdateProject: boolean
+}
+
+export function ProjectWorkspaceNav({
+  projectId,
+  isMonorepo,
+  canUpdateProject,
+}: ProjectWorkspaceNavProps) {
+  return (
+    <WorkspaceNavList>
+      {canUpdateProject ? (
+        <WorkspaceNavLinkModeling to={`/projects/${projectId}/modeling`}>
+          <WorkspaceNavIconWrap>{iconDb}</WorkspaceNavIconWrap>
+          <WorkspaceNavRowBody>
+            <WorkspaceNavRowTitle>Modelagem do banco de dados</WorkspaceNavRowTitle>
+            <WorkspaceNavRowDesc>
+              Editor visual com grade, zoom e minimapa.
+            </WorkspaceNavRowDesc>
+          </WorkspaceNavRowBody>
+          <WorkspaceNavChevron aria-hidden>→</WorkspaceNavChevron>
+        </WorkspaceNavLinkModeling>
+      ) : (
+        <WorkspaceNavRowLocked $variant="modeling">
+          <WorkspaceNavIconWrap>{iconDb}</WorkspaceNavIconWrap>
+          <WorkspaceNavRowBody>
+            <WorkspaceNavRowTitle>Modelagem do banco de dados</WorkspaceNavRowTitle>
+            <WorkspaceNavRowDesc>
+              Peça permissão para editar projeto e modelagem.
+            </WorkspaceNavRowDesc>
+          </WorkspaceNavRowBody>
+        </WorkspaceNavRowLocked>
+      )}
+      {canUpdateProject ? (
+        <WorkspaceNavLinkArchitecture to={`/projects/${projectId}/architecture`}>
+          <WorkspaceNavIconWrap>{iconArch}</WorkspaceNavIconWrap>
+          <WorkspaceNavRowBody>
+            <WorkspaceNavRowTitle>Mapa de arquitetura</WorkspaceNavRowTitle>
+            <WorkspaceNavRowDesc>
+              Serviços, filas e clientes em canvas dedicado.
+            </WorkspaceNavRowDesc>
+          </WorkspaceNavRowBody>
+          <WorkspaceNavChevron aria-hidden>→</WorkspaceNavChevron>
+        </WorkspaceNavLinkArchitecture>
+      ) : (
+        <WorkspaceNavRowLocked $variant="architecture">
+          <WorkspaceNavIconWrap>{iconArch}</WorkspaceNavIconWrap>
+          <WorkspaceNavRowBody>
+            <WorkspaceNavRowTitle>Mapa de arquitetura</WorkspaceNavRowTitle>
+            <WorkspaceNavRowDesc>
+              Disponível com permissão de edição do projeto.
+            </WorkspaceNavRowDesc>
+          </WorkspaceNavRowBody>
+        </WorkspaceNavRowLocked>
+      )}
+      <WorkspaceNavLinkFiles
+        to={
+          isMonorepo
+            ? `/projects/${projectId}/workspace-files`
+            : `/projects/${projectId}/subproject-files`
+        }
+      >
+        <WorkspaceNavIconWrap>{iconFiles}</WorkspaceNavIconWrap>
+        <WorkspaceNavRowBody>
+          <WorkspaceNavRowTitle>
+            {isMonorepo ? 'Explorador de arquivos' : 'Arquivos dos subprojetos'}
+          </WorkspaceNavRowTitle>
+          <WorkspaceNavRowDesc>
+            {isMonorepo
+              ? 'Árvore única do monorepo (apps/ e packages/); duplo-clique em um bloco no mapa.'
+              : 'Um repositório por bloco; duplo-clique no mapa abre o subprojeto.'}
+          </WorkspaceNavRowDesc>
+        </WorkspaceNavRowBody>
+        <WorkspaceNavChevron aria-hidden>→</WorkspaceNavChevron>
+      </WorkspaceNavLinkFiles>
+    </WorkspaceNavList>
+  )
+}

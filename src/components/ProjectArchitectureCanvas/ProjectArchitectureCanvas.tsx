@@ -332,7 +332,10 @@ function ArchitectureFlowWorkbench({
     (_: ReactMouseEvent, node: Node) => {
       if (node.type !== 'architectureBlock') return
       const data = node.data as ArchitectureBlockNodeData
-      if (data.kind === 'database') return
+      if (data.kind === 'database') {
+        navigate(`/projects/${projectId}/modeling`)
+        return
+      }
       if (isMonorepo) {
         navigate(
           `/projects/${projectId}/workspace-files?focus=${encodeURIComponent(node.id)}`,

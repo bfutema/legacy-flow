@@ -5,6 +5,10 @@ import {
   loadDeletedSeedProjectIds,
 } from '../persistence/deletedSeedProjectsStorage'
 import { loadProjectMetadata, removeProjectMetadata } from '../persistence/projectMetadataStorage'
+import {
+  loadProjectTimeline,
+  removeProjectTimeline,
+} from '../persistence/projectTimelineStorage'
 import { removeArchitectureFlow } from '../persistence/architectureFlowStorage'
 import { removeModelingFlow } from '../persistence/modelingFlowStorage'
 import {
@@ -125,6 +129,7 @@ const subprojectFilesKeyPrefix = (projectId: string) =>
 
 function purgeProjectLocalPersistence(projectId: string): void {
   removeProjectMetadata(projectId)
+  removeProjectTimeline(projectId)
   removeModelingFlow(projectId)
   removeArchitectureFlow(projectId)
   try {
@@ -175,16 +180,34 @@ export function createUserProject(input: NewProjectInput): Project {
   return project
 }
 
-/** Projeto para exibição (nome, descrição e data mesclados com localStorage, se houver). */
+/** Projeto para exibição (nome, descrição, timeline e data mesclados com localStorage, se houver). */
 export function resolveProjectById(id: string): Project | undefined {
   const base = getProjectById(id)
   if (!base) return undefined
   const stored = loadProjectMetadata(id)
-  if (!stored) return base
-  return {
-    ...base,
-    name: stored.name,
-    description: stored.description,
-    updatedAt: stored.updatedAt,
+  const tl = loadProjectTimeline(id)
+
+  let merged: Project = { ...base }
+  if (stored) {
+    merged = {
+      ...merged,
+      name: stored.name,
+      description: stored.description,
+      updatedAt: stored.updatedAt,
+    }
   }
+  if (tl && 'cleared' in tl) {
+    merged = {
+      ...merged,
+      timelineStartDate: undefined,
+      timelineEndDate: undefined,
+    }
+  } else if (tl && 'start' in tl && 'end' in tl) {
+    merged = {
+      ...merged,
+      timelineStartDate: tl.start,
+      timelineEndDate: tl.end,
+    }
+  }
+  return merged
 }

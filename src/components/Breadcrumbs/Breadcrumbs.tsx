@@ -73,6 +73,16 @@ function crumbsForPath(pathname: string): CrumbItem[] {
     ]
   }
 
+  const projSettings = normalized.match(/^\/projects\/([^/]+)\/settings$/)
+  if (projSettings) {
+    const p = resolveProjectById(projSettings[1])
+    return [
+      { label: 'Projetos', path: '/projects' },
+      { label: p?.name ?? 'Projeto', path: `/projects/${projSettings[1]}` },
+      { label: 'Configurações' },
+    ]
+  }
+
   const projDetail = normalized.match(/^\/projects\/([^/]+)$/)
   if (projDetail) {
     const p = resolveProjectById(projDetail[1])

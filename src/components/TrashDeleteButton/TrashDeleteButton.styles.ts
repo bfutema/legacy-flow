@@ -43,11 +43,10 @@ export const Shell = styled.button<{
   align-items: center;
   justify-content: ${({ $busy }) => ($busy ? 'center' : 'flex-start')};
   gap: ${({ $busy }) => ($busy ? '0.35rem' : '0.4rem')};
-  max-width: 100%;
   padding: ${SHELL_PAD_Y} ${SHELL_PAD_X};
   border: 1px solid var(--border);
   border-radius: 0.55rem;
-  min-height: 0;
+  min-height: calc(${SHELL_PAD_Y} * 2 + ${ICON}px);
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   appearance: none;
@@ -61,12 +60,28 @@ export const Shell = styled.button<{
   font-weight: 600;
   line-height: 1;
   isolation: isolate;
+  width: auto;
+  max-width: 100%;
   transition:
     transform 0.2s ease,
+    width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    gap 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    justify-content 0.2s ease,
     background 0.25s ease,
     border-color 0.25s ease,
     box-shadow 0.2s ease,
     color 0.25s ease;
+
+  /* Idle: só ícone — largura = altura (padding simétrico + ícone). */
+  &:not(:hover):not(:focus-visible):not([aria-busy='true']):not([data-success]) {
+    justify-content: center;
+    gap: 0;
+    padding: ${SHELL_PAD_Y} 0.55rem;
+    width: calc(${SHELL_PAD_Y} * 2 + ${ICON}px);
+    min-width: calc(${SHELL_PAD_Y} * 2 + ${ICON}px);
+    max-width: calc(${SHELL_PAD_Y} * 2 + ${ICON}px);
+  }
 
   &:hover:not(:disabled) {
     ${({ theme, $success, $busy }) =>
@@ -144,6 +159,15 @@ export const Shell = styled.button<{
     &:active:not(:disabled) {
       transform: none;
     }
+
+    &:not(:hover):not(:focus-visible):not([aria-busy='true']):not([data-success]) {
+      padding: ${SHELL_PAD_Y} ${SHELL_PAD_X};
+      gap: 0.4rem;
+      justify-content: flex-start;
+      width: auto;
+      min-width: 0;
+      max-width: 100%;
+    }
   }
 `
 
@@ -178,6 +202,25 @@ export const ContentRow = styled.span`
   justify-content: center;
   gap: 0.4rem;
   min-width: 0;
+
+  /* Só o ícone: largura fixa evita sobra do rótulo colapsado deslocar o ícone. */
+  ${Shell}:not(:hover):not(:focus-visible):not([aria-busy='true']):not([data-success]) & {
+    width: ${ICON}px;
+    min-width: ${ICON}px;
+    max-width: ${ICON}px;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ${Shell}:not(:hover):not(:focus-visible):not([aria-busy='true']):not([data-success]) & {
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      overflow: visible;
+      gap: 0.4rem;
+    }
+  }
 `
 
 export const IconWrap = styled.span`
@@ -197,9 +240,51 @@ export const IconWrap = styled.span`
 
 export const LabelText = styled.span`
   display: block;
+  flex: 0 1 auto;
+  min-width: 0;
   line-height: 1;
   font-size: 0.9rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  overflow: hidden;
+  max-width: 9rem;
+  opacity: 1;
+  transition:
+    max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease,
+    flex-basis 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+
+  ${Shell}:not(:hover):not(:focus-visible):not([aria-busy='true']):not([data-success])
+    & {
+    flex: 0 0 0;
+    max-width: 0;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 0.15s ease;
+
+    ${Shell}:not(:hover):not(:focus-visible):not([aria-busy='true']):not([data-success])
+      & {
+      flex: 0 1 auto;
+      max-width: 9rem;
+      opacity: 1;
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      pointer-events: auto;
+    }
+  }
 `

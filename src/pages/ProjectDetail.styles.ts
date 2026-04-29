@@ -58,7 +58,7 @@ export const ProjectDetailRoot = styled.div`
   }
 `
 
-/** Gráfico à esquerda, configurações e modelagem à direita. */
+/** Indicadores e alocações à esquerda; áreas de trabalho à direita. */
 export const DetailMain = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(280px, 22rem);
@@ -864,6 +864,394 @@ export const BackLink = styled(Link)`
   &:hover {
     text-decoration: underline;
   }
+`
+
+export const HeaderPageActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+`
+
+const SETTINGS_LINK_PAD_Y = '0.55rem'
+const SETTINGS_LINK_PAD_X = '1rem'
+const SETTINGS_LINK_ICON = 18
+
+/** Mesma escala do Excluir; em repouso só o ícone, texto abre no hover/focus. */
+export const PageSettingsLink = styled(Link)`
+  box-sizing: border-box;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  width: auto;
+  max-width: 100%;
+  padding: ${SETTINGS_LINK_PAD_Y} ${SETTINGS_LINK_PAD_X};
+  min-height: calc(${SETTINGS_LINK_PAD_Y} * 2 + ${SETTINGS_LINK_ICON}px);
+  border-radius: 0.55rem;
+  box-sizing: border-box;
+  font-family: inherit;
+  color: ${({ theme }) => theme.textMuted};
+  background: ${({ theme }) =>
+    theme.mode === 'dark'
+      ? 'rgba(148, 163, 184, 0.12)'
+      : 'rgba(71, 85, 105, 0.1)'};
+  border: 1px solid ${({ theme }) => theme.border};
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
+  transition:
+    transform 0.2s ease,
+    width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    gap 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.2s ease,
+    color 0.25s ease;
+
+  &:not(:hover):not(:focus-visible) {
+    justify-content: center;
+    gap: 0;
+    padding: ${SETTINGS_LINK_PAD_Y} 0.55rem;
+    width: calc(${SETTINGS_LINK_PAD_Y} * 2 + ${SETTINGS_LINK_ICON}px);
+    min-width: calc(${SETTINGS_LINK_PAD_Y} * 2 + ${SETTINGS_LINK_ICON}px);
+    max-width: calc(${SETTINGS_LINK_PAD_Y} * 2 + ${SETTINGS_LINK_ICON}px);
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.text};
+    border-color: ${({ theme }) => theme.primary};
+    background: ${({ theme }) =>
+      theme.mode === 'dark'
+        ? 'rgba(148, 163, 184, 0.18)'
+        : 'rgba(71, 85, 105, 0.14)'};
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
+
+    &:active {
+      transform: none;
+    }
+
+    &:not(:hover):not(:focus-visible) {
+      padding: ${SETTINGS_LINK_PAD_Y} ${SETTINGS_LINK_PAD_X};
+      gap: 0.4rem;
+      justify-content: flex-start;
+      width: auto;
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+`
+
+export const PageSettingsLinkIcon = styled.span`
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: ${SETTINGS_LINK_ICON}px;
+  height: ${SETTINGS_LINK_ICON}px;
+  color: inherit;
+
+  svg {
+    display: block;
+    shape-rendering: geometricPrecision;
+  }
+`
+
+export const PageSettingsLinkLabel = styled.span`
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  line-height: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 11rem;
+  opacity: 1;
+  transition:
+    max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease,
+    flex-basis 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+
+  ${PageSettingsLink}:not(:hover):not(:focus-visible) & {
+    flex: 0 0 0;
+    max-width: 0;
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 0.15s ease;
+
+    ${PageSettingsLink}:not(:hover):not(:focus-visible) & {
+      flex: 0 1 auto;
+      max-width: 11rem;
+      opacity: 1;
+    }
+  }
+`
+
+export const SettingsHeaderRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+`
+
+export const SettingsTitleBlock = styled.div`
+  min-width: 0;
+`
+
+export const SettingsPageTitle = styled.h1`
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+`
+
+export const SettingsPageLead = styled.p`
+  margin: 0;
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.textMuted};
+  line-height: 1.45;
+`
+
+export const SettingsForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  width: 100%;
+`
+
+export const SettingsFieldBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+`
+
+export const SettingsLabel = styled.label`
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const SettingsTextInput = styled.input`
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.primaryMuted};
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+`
+
+export const SettingsTextArea = styled.textarea`
+  width: 100%;
+  min-height: 5rem;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.text};
+  font-size: 0.95rem;
+  line-height: 1.45;
+  resize: vertical;
+  font-family: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.primaryMuted};
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+`
+
+export const SettingsDateRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+`
+
+export const SettingsDateField = styled.div`
+  flex: 1;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+`
+
+export const SettingsDateInput = styled(SettingsTextInput).attrs({ type: 'date' })`
+  min-height: 2.65rem;
+  color-scheme: inherit;
+`
+
+export const SettingsFieldHint = styled.p`
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const SettingsFieldError = styled.p`
+  margin: 0;
+  font-size: 0.78rem;
+  color: #dc2626;
+`
+
+export const SettingsColorRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+`
+
+export const SettingsColorBoxLabel = styled.label`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.85rem;
+  height: 2.85rem;
+  padding: 0.28rem;
+  box-sizing: border-box;
+  border-radius: 0.6rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
+  box-shadow: ${({ theme }) => theme.shadow};
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.textMuted};
+  }
+
+  &:focus-within {
+    border-color: ${({ theme }) => theme.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.primaryMuted};
+  }
+`
+
+export const SettingsColorInput = styled.input`
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+
+  &::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  &::-webkit-color-swatch {
+    border-radius: 0.4rem;
+    border: none;
+  }
+
+  &::-moz-color-swatch {
+    border: none;
+    border-radius: 0.4rem;
+  }
+`
+
+export const SettingsColorHint = styled.span`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.textMuted};
+`
+
+export const SettingsReadOnlyId = styled(SettingsTextInput)`
+  opacity: 0.88;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+`
+
+export const SettingsSubmitRow = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+`
+
+export const SettingsSubmitButton = styled.button`
+  padding: 0.72rem 1.2rem;
+  border-radius: 0.55rem;
+  border: none;
+  background: ${({ theme }) => theme.primary};
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    filter 0.15s ease,
+    transform 0.12s ease;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+`
+
+export const SettingsSavedFlash = styled.span`
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.primary};
 `
 
 export const Body = styled.p`

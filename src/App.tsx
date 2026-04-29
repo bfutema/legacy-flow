@@ -11,6 +11,7 @@ import { Login } from './pages/Login'
 import { NewProject } from './pages/NewProject'
 import { ProjectArchitecture } from './pages/ProjectArchitecture'
 import { ProjectDetail } from './pages/ProjectDetail'
+import { ProjectSettings } from './pages/ProjectSettings'
 import { SubprojectFilesHubPage } from './pages/subprojectFiles/SubprojectFilesHubPage'
 import { SubprojectFilesViewPage } from './pages/subprojectFiles/SubprojectFilesViewPage'
 import { WorkspaceFilesPage } from './pages/subprojectFiles/WorkspaceFilesPage'
@@ -93,6 +94,14 @@ export default function App() {
                 element={
                   <RequireAbility I="read" a="Project">
                     <ProjectDetail />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/:projectId/settings"
+                element={
+                  <RequireAbility I="read" a="Project">
+                    <ProjectSettings />
                   </RequireAbility>
                 }
               />
