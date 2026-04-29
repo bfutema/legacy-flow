@@ -12,6 +12,8 @@ export const TIMELINE_UI = {
   dayColumnWidth: 44,
   /** Uma coluna = uma semana inteira (visão Semana). */
   weekColumnWidth: 88,
+  /** Uma coluna = um mês calendário (visão Mês). */
+  monthColumnWidth: 120,
   /** Altura das linhas de colaborador (igual à de projeto para alinhar a grade). */
   userRowHeight: 50,
   /** Altura das barras Gantt na grade. */
@@ -33,4 +35,8 @@ export const TIMELINE_UI = {
   maxBufferCols: 520,
   /** Máximo de colunas (semanas) na visão Semana. */
   maxBufferWeeks: 96,
+  /** Meses adicionados ao rolar na visão Mês. */
+  extendChunkMonths: 6,
+  /** Máximo de colunas (meses) na visão Mês. */
+  maxBufferMonths: 48,
 } as const

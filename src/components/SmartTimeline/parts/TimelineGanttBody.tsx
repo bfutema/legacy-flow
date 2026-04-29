@@ -69,7 +69,14 @@ import {
 } from '../../../persistence/allocationsGanttStorage'
 import { GanttBarSegment } from './GanttBarSegment'
 import type { TimelineScale } from '../types'
-import { dateToSerial, formatWeekRangeColumnLabel } from '../utils/daySerial'
+import {
+  dateToSerial,
+  daysInMonthStartingAt,
+  formatMonthColumnLabel,
+  formatWeekRangeColumnLabel,
+  monthScaleBarPixelRect,
+  monthScalePixelOffset,
+} from '../utils/daySerial'
 
 const WEEKDAY_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'] as const
 
@@ -245,23 +252,26 @@ export function TimelineGanttBody({
   const timelineScrollLayout = useMemo(() => {
     if (scale === 'week') {
       return {
+        timelineMode: 'week' as const,
         columnWidth: TIMELINE_UI.weekColumnWidth,
         columnUnitDays: 7,
         initialColumnCount: 28,
-      } as const
+      }
     }
     if (scale === 'month') {
       return {
-        columnWidth: 10,
+        timelineMode: 'month' as const,
+        columnWidth: TIMELINE_UI.monthColumnWidth,
         columnUnitDays: 1,
-        initialColumnCount: 100,
-      } as const
+        initialColumnCount: 18,
+      }
     }
     return {
+      timelineMode: 'day' as const,
       columnWidth: TIMELINE_UI.dayColumnWidth,
       columnUnitDays: 1,
       initialColumnCount: 100,
-    } as const
+    }
   }, [scale])
 
   const scrollColumnWidth = dayWidthProp ?? timelineScrollLayout.columnWidth
@@ -437,6 +447,7 @@ export function TimelineGanttBody({
     getDateForColumn,
     getSerialForColumn,
   } = useVirtualInfiniteTimelineScroll({
+    timelineMode: timelineScrollLayout.timelineMode,
     columnWidth: scrollColumnWidth,
     columnUnitDays: timelineScrollLayout.columnUnitDays,
     viewResetKey: scale,
@@ -444,6 +455,7 @@ export function TimelineGanttBody({
   })
 
   const isWeekScale = scale === 'week'
+  const isMonthScale = scale === 'month'
 
   /** Metade da lane do header para alinhar com a coluna “Projetos” (só visão dia). */
   const headerHalfH = TIMELINE_UI.headerLaneMinHeight / 2
@@ -451,12 +463,25 @@ export function TimelineGanttBody({
   const dowRowH = `${headerHalfH}px`
 
   const todaySerial = dateToSerial(new Date())
-  const lastSerial = startSerial + columnCount * columnUnitDays - 1
+  const lastSerial =
+    isMonthScale && columnCount > 0
+      ? getSerialForColumn(columnCount - 1) +
+        daysInMonthStartingAt(getSerialForColumn(columnCount - 1)) -
+        1
+      : startSerial + columnCount * columnUnitDays - 1
   const todayInWindow =
     todaySerial >= startSerial && todaySerial <= lastSerial
   const todayIndicatorCenterX = todayInWindow
     ? Math.round(
-        (todaySerial - startSerial) * pixelsPerDay + pixelsPerDay / 2,
+        isMonthScale
+          ? (monthScalePixelOffset(startSerial, columnWidth, todaySerial) +
+              monthScalePixelOffset(
+                startSerial,
+                columnWidth,
+                todaySerial + 1,
+              )) /
+              2
+          : (todaySerial - startSerial) * pixelsPerDay + pixelsPerDay / 2,
       )
     : 0
 
@@ -548,7 +573,30 @@ export function TimelineGanttBody({
                     </GanttTimeWeekCell>
                   )
                 })
-              : visibleColIndices.map((col) => {
+              : isMonthScale
+                ? visibleColIndices.map((col) => {
+                    const monthStart = getSerialForColumn(col)
+                    const dim = daysInMonthStartingAt(monthStart)
+                    const monthHasToday =
+                      todaySerial >= monthStart &&
+                      todaySerial <= monthStart + dim - 1
+                    return (
+                      <GanttTimeWeekCell
+                        key={`mo-${monthStart}`}
+                        $isToday={monthHasToday}
+                        style={{
+                          position: 'absolute',
+                          left: col * columnWidth,
+                          top: 0,
+                          width: columnWidth,
+                          height: TIMELINE_UI.headerLaneMinHeight,
+                        }}
+                      >
+                        {formatMonthColumnLabel(monthStart)}
+                      </GanttTimeWeekCell>
+                    )
+                  })
+                : visibleColIndices.map((col) => {
                   const d = getDateForColumn(col)
                   const wk = d.getDay() === 0 || d.getDay() === 6
                   const isToday = dateToSerial(d) === todaySerial
@@ -569,7 +617,7 @@ export function TimelineGanttBody({
                     </GanttTimeDayCell>
                   )
                 })}
-            {!isWeekScale
+            {!isWeekScale && !isMonthScale
               ? visibleColIndices.map((col) => {
                   const d = getDateForColumn(col)
                   const wk = d.getDay() === 0 || d.getDay() === 6
@@ -678,7 +726,7 @@ export function TimelineGanttBody({
                   {visibleColIndices.map((col) => {
                     const d = getDateForColumn(col)
                     const wk =
-                      !isWeekScale && (d.getDay() === 0 || d.getDay() === 6)
+                      scale === 'day' && (d.getDay() === 0 || d.getDay() === 6)
                     return (
                       <GanttDayBgCell
                         key={`pg-${project.id}-${getSerialForColumn(col)}`}
@@ -746,8 +794,9 @@ export function TimelineGanttBody({
                     {visibleColIndices.map((col) => {
                       const d = getDateForColumn(col)
                       const wk =
-                        !isWeekScale && (d.getDay() === 0 || d.getDay() === 6)
+                        scale === 'day' && (d.getDay() === 0 || d.getDay() === 6)
                       const s0 = getSerialForColumn(col)
+                      const dim = isMonthScale ? daysInMonthStartingAt(s0) : 0
                       return (
                         <GanttDayBgCell
                           key={`ug-${user.id}-${s0}`}
@@ -764,7 +813,9 @@ export function TimelineGanttBody({
                             canUpdateTimeline
                               ? isWeekScale
                                 ? 'Adicionar alocação nesta semana (clique)'
-                                : 'Adicionar alocação neste dia (clique)'
+                                : isMonthScale
+                                  ? 'Adicionar alocação neste mês (clique)'
+                                  : 'Adicionar alocação neste dia (clique)'
                               : undefined
                           }
                           onClick={
@@ -774,7 +825,11 @@ export function TimelineGanttBody({
                                     project.id,
                                     user.id,
                                     s0,
-                                    isWeekScale ? s0 + 6 : s0,
+                                    isWeekScale
+                                      ? s0 + 6
+                                      : isMonthScale
+                                        ? s0 + dim - 1
+                                        : s0,
                                   )
                               : undefined
                           }
@@ -788,6 +843,18 @@ export function TimelineGanttBody({
                           bar={b}
                           timelineStartSerial={startSerial}
                           dayWidth={pixelsPerDay}
+                          barLayoutPx={
+                            isMonthScale
+                              ? monthScaleBarPixelRect(
+                                  startSerial,
+                                  columnWidth,
+                                  b,
+                                )
+                              : undefined
+                          }
+                          dragPixelsPerDay={
+                            isMonthScale ? pixelsPerDay : undefined
+                          }
                           color={user.color}
                           projectId={project.id}
                           userId={user.id}

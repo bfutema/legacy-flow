@@ -5,12 +5,16 @@ import { GanttBarFill, GanttBarHandle, GanttBarRoot } from './GanttBarSegment.st
 type Props = {
   bar: MockGanttBar
   timelineStartSerial: number
+  /** Largura px por dia quando a régua é uniforme (dia/semana). */
   dayWidth: number
+  /** Posição exata (ex.: visão mês com colunas de largura fixa por mês). */
+  barLayoutPx?: { left: number; width: number }
+  /** Conversão px→dias ao arrastar (ex.: média mensal); default `dayWidth`. */
+  dragPixelsPerDay?: number
   color: string
   projectId: string
   userId: string
   barIndex: number
-  /** Quando false, a barra é só leitura (sem arrastar extremidades). */
   canEdit?: boolean
   onBarChange: (
     projectId: string,
@@ -24,6 +28,8 @@ export function GanttBarSegment({
   bar,
   timelineStartSerial,
   dayWidth,
+  barLayoutPx,
+  dragPixelsPerDay,
   color,
   projectId,
   userId,
@@ -33,8 +39,14 @@ export function GanttBarSegment({
 }: Props) {
   const [dragging, setDragging] = useState(false)
 
-  const left = (bar.startSerial - timelineStartSerial) * dayWidth + 3
-  const width = (bar.endSerial - bar.startSerial + 1) * dayWidth - 6
+  const pxPerDay = dragPixelsPerDay ?? dayWidth
+
+  const left = barLayoutPx
+    ? barLayoutPx.left
+    : (bar.startSerial - timelineStartSerial) * dayWidth + 3
+  const width = barLayoutPx
+    ? barLayoutPx.width
+    : (bar.endSerial - bar.startSerial + 1) * dayWidth - 6
 
   const onHandlePointerDown = useCallback(
     (edge: 'start' | 'end') => (e: React.PointerEvent) => {
@@ -51,7 +63,7 @@ export function GanttBarSegment({
 
       const move = (ev: PointerEvent) => {
         if (ev.pointerId !== pid) return
-        const dDays = Math.round((ev.clientX - originX) / dayWidth)
+        const dDays = Math.round((ev.clientX - originX) / pxPerDay)
         if (edge === 'start') {
           let ns = initStart + dDays
           if (ns > initEnd) ns = initEnd
@@ -89,7 +101,7 @@ export function GanttBarSegment({
     [
       bar.startSerial,
       bar.endSerial,
-      dayWidth,
+      pxPerDay,
       onBarChange,
       projectId,
       userId,

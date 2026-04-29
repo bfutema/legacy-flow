@@ -49,3 +49,87 @@ export function formatWeekRangeColumnLabel(weekStartSerial: number): string {
   }
   return `${d1} ${shortMonth(start)} – ${d2} ${shortMonth(end)} ${end.getFullYear()}`
 }
+
+/** Primeiro dia do mês local que contém `serial`. */
+export function startOfMonthSerial(serial: number): number {
+  const d = serialToLocalDate(serial)
+  return dateToSerial(new Date(d.getFullYear(), d.getMonth(), 1))
+}
+
+/** Primeiro dia do mês `deltaMonths` após `monthStartSerial` (que deve ser dia 1). */
+export function addCalendarMonthsSerial(
+  monthStartSerial: number,
+  deltaMonths: number,
+): number {
+  const d = serialToLocalDate(startOfMonthSerial(monthStartSerial))
+  return dateToSerial(new Date(d.getFullYear(), d.getMonth() + deltaMonths, 1))
+}
+
+/** Quantidade de dias do mês cujo primeiro dia é `monthStartSerial`. */
+export function daysInMonthStartingAt(monthStartSerial: number): number {
+  const d = serialToLocalDate(startOfMonthSerial(monthStartSerial))
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+}
+
+/** Cabeçalho de coluna mensal estilo "fev 2021". */
+export function formatMonthColumnLabel(monthStartSerial: number): string {
+  const d = serialToLocalDate(startOfMonthSerial(monthStartSerial))
+  const mon = d
+    .toLocaleDateString('pt-BR', { month: 'short' })
+    .replace(/\./g, '')
+    .trim()
+  return `${mon} ${d.getFullYear()}`
+}
+
+/** Média de dias por mês (ajuste fino de scroll). */
+export const AVG_DAYS_PER_MONTH = 30.436875
+
+/**
+ * Posição em px da borda esquerda do dia `daySerial` na régua mensal:
+ * cada mês ocupa `monthColumnWidth` px; densidade = dias do mês.
+ */
+export function monthScalePixelOffset(
+  timelineStartSerial: number,
+  monthColumnWidth: number,
+  daySerial: number,
+): number {
+  const anchor = startOfMonthSerial(timelineStartSerial)
+  if (daySerial < anchor) {
+    const dim = daysInMonthStartingAt(anchor)
+    return ((daySerial - anchor) * monthColumnWidth) / dim
+  }
+  let px = 0
+  let monthStart = anchor
+  for (let i = 0; i < 2400; i++) {
+    const dim = daysInMonthStartingAt(monthStart)
+    const monthEnd = monthStart + dim - 1
+    if (daySerial <= monthEnd) {
+      return px + ((daySerial - monthStart) * monthColumnWidth) / dim
+    }
+    px += monthColumnWidth
+    monthStart = addCalendarMonthsSerial(monthStart, 1)
+  }
+  const dim = daysInMonthStartingAt(monthStart)
+  return px + ((daySerial - monthStart) * monthColumnWidth) / dim
+}
+
+export function monthScaleBarPixelRect(
+  timelineStartSerial: number,
+  monthColumnWidth: number,
+  bar: { startSerial: number; endSerial: number },
+): { left: number; width: number } {
+  const rawLeft = monthScalePixelOffset(
+    timelineStartSerial,
+    monthColumnWidth,
+    bar.startSerial,
+  )
+  const rawRight = monthScalePixelOffset(
+    timelineStartSerial,
+    monthColumnWidth,
+    bar.endSerial + 1,
+  )
+  return {
+    left: rawLeft + 3,
+    width: Math.max(rawRight - rawLeft - 6, 8),
+  }
+}
