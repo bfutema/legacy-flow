@@ -49,6 +49,7 @@ import {
   GanttScrollInner,
   GanttTimeDayCell,
   GanttTimeDowCell,
+  GanttTimeWeekCell,
   GanttTodayIndicatorLine,
   GanttTodayIndicatorTrack,
   GanttTrackArea,
@@ -68,21 +69,16 @@ import {
 } from '../../../persistence/allocationsGanttStorage'
 import { GanttBarSegment } from './GanttBarSegment'
 import type { TimelineScale } from '../types'
-import { dateToSerial } from '../utils/daySerial'
+import { dateToSerial, formatWeekRangeColumnLabel } from '../utils/daySerial'
 
 const WEEKDAY_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'] as const
 
 type Props = {
   scale: TimelineScale
+  /** Sobrescreve a largura da coluna da régua (px), ex. testes. */
   dayWidth?: number
   laneOpen: boolean
   onToggleLane: () => void
-}
-
-function dayWidthForScale(scale: TimelineScale): number {
-  if (scale === 'day') return TIMELINE_UI.dayColumnWidth
-  if (scale === 'week') return 20
-  return 10
 }
 
 function barIntersectsWindow(
@@ -245,7 +241,31 @@ export function TimelineGanttBody({
   const canAllocate = ability.can('create', 'Timeline')
   const canDeallocate = ability.can('delete', 'Timeline')
   const canUpdateTimeline = ability.can('update', 'Timeline')
-  const dayWidth = dayWidthProp ?? dayWidthForScale(scale)
+
+  const timelineScrollLayout = useMemo(() => {
+    if (scale === 'week') {
+      return {
+        columnWidth: TIMELINE_UI.weekColumnWidth,
+        columnUnitDays: 7,
+        initialColumnCount: 28,
+      } as const
+    }
+    if (scale === 'month') {
+      return {
+        columnWidth: 10,
+        columnUnitDays: 1,
+        initialColumnCount: 100,
+      } as const
+    }
+    return {
+      columnWidth: TIMELINE_UI.dayColumnWidth,
+      columnUnitDays: 1,
+      initialColumnCount: 100,
+    } as const
+  }, [scale])
+
+  const scrollColumnWidth = dayWidthProp ?? timelineScrollLayout.columnWidth
+
   const [projects, setProjects] = useState<MockGanttProject[]>(
     loadAllocationsGanttProjects,
   )
@@ -307,8 +327,8 @@ export function TimelineGanttBody({
     [canUpdateTimeline],
   )
 
-  const onAddBarAtDay = useCallback(
-    (projectId: string, userId: string, daySerial: number) => {
+  const onAddBarRange = useCallback(
+    (projectId: string, userId: string, startSerial: number, endSerial: number) => {
       if (!canUpdateTimeline) return
       setProjects((ps) => {
         const nextProjects = ps.map((p) => {
@@ -316,8 +336,8 @@ export function TimelineGanttBody({
           const users = p.users.map((u) => {
             if (u.id !== userId) return u
             const newBar: MockGanttBar = {
-              startSerial: daySerial,
-              endSerial: daySerial,
+              startSerial,
+              endSerial,
             }
             return { ...u, bars: [...u.bars, newBar] }
           })
@@ -406,6 +426,9 @@ export function TimelineGanttBody({
     startSerial,
     columnCount,
     totalWidth,
+    columnWidth,
+    columnUnitDays,
+    pixelsPerDay,
     visibleColIndices,
     visibleStartSerial,
     visibleEndSerial,
@@ -413,19 +436,28 @@ export function TimelineGanttBody({
     shiftViewportByDays,
     getDateForColumn,
     getSerialForColumn,
-  } = useVirtualInfiniteTimelineScroll({ dayWidth })
+  } = useVirtualInfiniteTimelineScroll({
+    columnWidth: scrollColumnWidth,
+    columnUnitDays: timelineScrollLayout.columnUnitDays,
+    viewResetKey: scale,
+    initialColumnCount: timelineScrollLayout.initialColumnCount,
+  })
 
-  /** Metade da lane do header para alinhar com a coluna “Projetos” (sem buraco escuro abaixo dos dias da semana). */
+  const isWeekScale = scale === 'week'
+
+  /** Metade da lane do header para alinhar com a coluna “Projetos” (só visão dia). */
   const headerHalfH = TIMELINE_UI.headerLaneMinHeight / 2
   const dayRowH = `${headerHalfH}px`
   const dowRowH = `${headerHalfH}px`
 
   const todaySerial = dateToSerial(new Date())
-  const lastSerial = startSerial + columnCount - 1
+  const lastSerial = startSerial + columnCount * columnUnitDays - 1
   const todayInWindow =
     todaySerial >= startSerial && todaySerial <= lastSerial
   const todayIndicatorCenterX = todayInWindow
-    ? Math.round((todaySerial - startSerial) * dayWidth + dayWidth / 2)
+    ? Math.round(
+        (todaySerial - startSerial) * pixelsPerDay + pixelsPerDay / 2,
+      )
     : 0
 
   const allocExcluded =
@@ -495,48 +527,71 @@ export function TimelineGanttBody({
               ) : null}
             </GanttHeaderStickyLane>
           <GanttVirtualTimeTrackSticky $width={totalWidth}>
-            {visibleColIndices.map((col) => {
-              const d = getDateForColumn(col)
-              const wk = d.getDay() === 0 || d.getDay() === 6
-              const isToday = dateToSerial(d) === todaySerial
-              return (
-                <GanttTimeDayCell
-                  key={`n-${startSerial + col}`}
-                  $weekend={wk}
-                  $isToday={isToday}
-                  style={{
-                    position: 'absolute',
-                    left: col * dayWidth,
-                    top: 0,
-                    width: dayWidth,
-                    height: dayRowH,
-                  }}
-                >
-                  {d.getDate()}
-                </GanttTimeDayCell>
-              )
-            })}
-            {visibleColIndices.map((col) => {
-              const d = getDateForColumn(col)
-              const wk = d.getDay() === 0 || d.getDay() === 6
-              const isToday = dateToSerial(d) === todaySerial
-              return (
-                <GanttTimeDowCell
-                  key={`w-${startSerial + col}`}
-                  $weekend={wk}
-                  $isToday={isToday}
-                  style={{
-                    position: 'absolute',
-                    left: col * dayWidth,
-                    top: dayRowH,
-                    width: dayWidth,
-                    height: dowRowH,
-                  }}
-                >
-                  {WEEKDAY_PT[d.getDay()]}
-                </GanttTimeDowCell>
-              )
-            })}
+            {isWeekScale
+              ? visibleColIndices.map((col) => {
+                  const weekStart = getSerialForColumn(col)
+                  const weekHasToday =
+                    todaySerial >= weekStart && todaySerial <= weekStart + 6
+                  return (
+                    <GanttTimeWeekCell
+                      key={`wk-${weekStart}`}
+                      $isToday={weekHasToday}
+                      style={{
+                        position: 'absolute',
+                        left: col * columnWidth,
+                        top: 0,
+                        width: columnWidth,
+                        height: TIMELINE_UI.headerLaneMinHeight,
+                      }}
+                    >
+                      {formatWeekRangeColumnLabel(weekStart)}
+                    </GanttTimeWeekCell>
+                  )
+                })
+              : visibleColIndices.map((col) => {
+                  const d = getDateForColumn(col)
+                  const wk = d.getDay() === 0 || d.getDay() === 6
+                  const isToday = dateToSerial(d) === todaySerial
+                  return (
+                    <GanttTimeDayCell
+                      key={`n-${startSerial + col * columnUnitDays}`}
+                      $weekend={wk}
+                      $isToday={isToday}
+                      style={{
+                        position: 'absolute',
+                        left: col * columnWidth,
+                        top: 0,
+                        width: columnWidth,
+                        height: dayRowH,
+                      }}
+                    >
+                      {d.getDate()}
+                    </GanttTimeDayCell>
+                  )
+                })}
+            {!isWeekScale
+              ? visibleColIndices.map((col) => {
+                  const d = getDateForColumn(col)
+                  const wk = d.getDay() === 0 || d.getDay() === 6
+                  const isToday = dateToSerial(d) === todaySerial
+                  return (
+                    <GanttTimeDowCell
+                      key={`w-${startSerial + col * columnUnitDays}`}
+                      $weekend={wk}
+                      $isToday={isToday}
+                      style={{
+                        position: 'absolute',
+                        left: col * columnWidth,
+                        top: dayRowH,
+                        width: columnWidth,
+                        height: dowRowH,
+                      }}
+                    >
+                      {WEEKDAY_PT[d.getDay()]}
+                    </GanttTimeDowCell>
+                  )
+                })
+              : null}
             </GanttVirtualTimeTrackSticky>
           </GanttGridRowPair>
         </GanttStickyHeaderSection>
@@ -622,17 +677,18 @@ export function TimelineGanttBody({
                 >
                   {visibleColIndices.map((col) => {
                     const d = getDateForColumn(col)
-                    const wk = d.getDay() === 0 || d.getDay() === 6
+                    const wk =
+                      !isWeekScale && (d.getDay() === 0 || d.getDay() === 6)
                     return (
                       <GanttDayBgCell
-                        key={`pg-${project.id}-${startSerial + col}`}
+                        key={`pg-${project.id}-${getSerialForColumn(col)}`}
                         $weekend={wk}
                         $interactive={false}
                         style={{
                           position: 'absolute',
-                          left: col * dayWidth,
+                          left: col * columnWidth,
                           top: 0,
-                          width: dayWidth,
+                          width: columnWidth,
                           height: '100%',
                         }}
                       />
@@ -689,31 +745,36 @@ export function TimelineGanttBody({
                   >
                     {visibleColIndices.map((col) => {
                       const d = getDateForColumn(col)
-                      const wk = d.getDay() === 0 || d.getDay() === 6
+                      const wk =
+                        !isWeekScale && (d.getDay() === 0 || d.getDay() === 6)
+                      const s0 = getSerialForColumn(col)
                       return (
                         <GanttDayBgCell
-                          key={`ug-${user.id}-${startSerial + col}`}
+                          key={`ug-${user.id}-${s0}`}
                           $weekend={wk}
                           $interactive={canUpdateTimeline}
                           style={{
                             position: 'absolute',
-                            left: col * dayWidth,
+                            left: col * columnWidth,
                             top: 0,
-                            width: dayWidth,
+                            width: columnWidth,
                             height: '100%',
                           }}
                           title={
                             canUpdateTimeline
-                              ? 'Adicionar alocação neste dia (clique)'
+                              ? isWeekScale
+                                ? 'Adicionar alocação nesta semana (clique)'
+                                : 'Adicionar alocação neste dia (clique)'
                               : undefined
                           }
                           onClick={
                             canUpdateTimeline
                               ? () =>
-                                  onAddBarAtDay(
+                                  onAddBarRange(
                                     project.id,
                                     user.id,
-                                    getSerialForColumn(col),
+                                    s0,
+                                    isWeekScale ? s0 + 6 : s0,
                                   )
                               : undefined
                           }
@@ -726,7 +787,7 @@ export function TimelineGanttBody({
                           key={`${user.id}-bar-${i}`}
                           bar={b}
                           timelineStartSerial={startSerial}
-                          dayWidth={dayWidth}
+                          dayWidth={pixelsPerDay}
                           color={user.color}
                           projectId={project.id}
                           userId={user.id}

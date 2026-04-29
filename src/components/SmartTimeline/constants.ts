@@ -10,19 +10,27 @@ export const TIMELINE_UI = {
   laneUserExtraIndentPx: 14,
   /** Largura de cada dia na régua (px). */
   dayColumnWidth: 44,
-  userRowHeight: 48,
+  /** Uma coluna = uma semana inteira (visão Semana). */
+  weekColumnWidth: 88,
+  /** Altura das linhas de colaborador (igual à de projeto para alinhar a grade). */
+  userRowHeight: 50,
   /** Altura das barras Gantt na grade. */
   ganttBarThickness: 26,
   /** Quadrado de cor na lane (input) — um pouco menor que a barra. */
   laneColorSwatchSize: 22,
-  projectRowHeight: 52,
+  /** Linha de projeto: nome + período em duas linhas; mesma altura que `userRowHeight`. */
+  projectRowHeight: 50,
   headerLaneMinHeight: 72,
   /** Colunas extras renderizadas fora da viewport (cada lado). */
   virtualBufferCols: 6,
   /** Dias adicionados ao chegar perto da borda do scroll. */
   extendChunkDays: 45,
+  /** Semanas adicionadas na visão por semana. */
+  extendChunkWeeks: 8,
   /** Distância (px) da borda para disparar extensão. */
   extendThresholdPx: 280,
   /** Máximo de colunas no modelo; remove do lado oposto ao crescer. */
   maxBufferCols: 520,
+  /** Máximo de colunas (semanas) na visão Semana. */
+  maxBufferWeeks: 96,
 } as const

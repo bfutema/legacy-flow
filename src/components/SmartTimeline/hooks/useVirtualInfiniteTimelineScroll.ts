@@ -8,16 +8,16 @@ import {
   type UIEvent,
 } from 'react'
 import { TIMELINE_UI } from '../constants'
-import { dateToSerial, formatMonthYearPt, serialToLocalDate } from '../utils/daySerial'
+import {
+  dateToSerial,
+  formatMonthYearPt,
+  serialToLocalDate,
+  startOfIsoWeekSerial,
+} from '../utils/daySerial'
 
 type ScrollMetrics = { left: number; vw: number }
 
-const {
-  virtualBufferCols: BUFFER,
-  extendChunkDays: CHUNK,
-  extendThresholdPx: THRESH,
-  maxBufferCols: MAX_COLS,
-} = TIMELINE_UI
+const { virtualBufferCols: BUFFER, extendThresholdPx: THRESH } = TIMELINE_UI
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n))
@@ -25,40 +25,74 @@ function clamp(n: number, lo: number, hi: number): number {
 
 type WindowState = { startSerial: number; columnCount: number }
 
-type Options = {
-  dayWidth: number
+export type VirtualTimelineOptions = {
+  /** Largura em px de cada coluna (um dia ou uma semana inteira). */
+  columnWidth: number
+  /** Dias cobertos por coluna: 1 (dia/mês) ou 7 (semana). */
+  columnUnitDays: number
+  /** Ao mudar (ex.: escala), reinicia janela e scroll horizontal. */
+  viewResetKey: string
   initialStartSerial?: number
   initialColumnCount?: number
 }
 
-function getInitialTimelineStartSerial(): number {
+function getInitialMonthStartSerial(): number {
   const now = new Date()
   return dateToSerial(new Date(now.getFullYear(), now.getMonth(), 1))
 }
 
+function defaultInitialStartSerial(columnUnitDays: number): number {
+  const monthStart = getInitialMonthStartSerial()
+  return columnUnitDays === 7 ? startOfIsoWeekSerial(monthStart) : monthStart
+}
+
+function defaultInitialColumnCount(columnUnitDays: number): number {
+  if (columnUnitDays === 7) return 28
+  return 100
+}
+
+function extendChunkColumns(columnUnitDays: number): number {
+  return columnUnitDays === 7
+    ? TIMELINE_UI.extendChunkWeeks
+    : TIMELINE_UI.extendChunkDays
+}
+
+function maxTimelineColumns(columnUnitDays: number): number {
+  return columnUnitDays === 7
+    ? TIMELINE_UI.maxBufferWeeks
+    : TIMELINE_UI.maxBufferCols
+}
+
 export function useVirtualInfiniteTimelineScroll({
-  dayWidth,
-  initialStartSerial = getInitialTimelineStartSerial(),
-  initialColumnCount = 100,
-}: Options) {
+  columnWidth,
+  columnUnitDays,
+  viewResetKey,
+  initialStartSerial: initialStartSerialProp,
+  initialColumnCount: initialColumnCountProp,
+}: VirtualTimelineOptions) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const metricsRef = useRef<ScrollMetrics>({ left: 0, vw: 0 })
   const rafRef = useRef<number | null>(null)
   const pendingScrollDeltaRef = useRef(0)
-  const prevDayWidthRef = useRef(dayWidth)
+  const prevColumnWidthRef = useRef(columnWidth)
   const extendCooldownRef = useRef(0)
-  /** Evita prepend/append ao rolar só na vertical (scrollLeft não muda). */
   const prevScrollLeftRef = useRef(0)
 
-  const [win, setWin] = useState<WindowState>(() => ({
-    startSerial: initialStartSerial,
-    columnCount: initialColumnCount,
-  }))
+  const [win, setWin] = useState<WindowState>(() => {
+    const base =
+      initialStartSerialProp ?? defaultInitialStartSerial(columnUnitDays)
+    const startSerial0 =
+      columnUnitDays === 7 ? startOfIsoWeekSerial(base) : base
+    const columnCount0 =
+      initialColumnCountProp ?? defaultInitialColumnCount(columnUnitDays)
+    return { startSerial: startSerial0, columnCount: columnCount0 }
+  })
 
   const [tick, setTick] = useState(0)
 
   const { startSerial, columnCount } = win
-  const totalWidth = columnCount * dayWidth
+  const totalWidth = columnCount * columnWidth
+  const pixelsPerDay = columnWidth / columnUnitDays
 
   const readMetrics = useCallback((el: HTMLDivElement) => {
     metricsRef.current = { left: el.scrollLeft, vw: el.clientWidth }
@@ -87,32 +121,37 @@ export function useVirtualInfiniteTimelineScroll({
     }
   }, [readMetrics])
 
+  const CHUNK = extendChunkColumns(columnUnitDays)
+  const MAX_COLS = maxTimelineColumns(columnUnitDays)
+
   const prependChunk = useCallback(() => {
+    const step = CHUNK * columnUnitDays
     setWin((w) => {
       if (w.columnCount >= MAX_COLS) {
-        pendingScrollDeltaRef.current += CHUNK * dayWidth
-        return { startSerial: w.startSerial - CHUNK, columnCount: MAX_COLS }
+        pendingScrollDeltaRef.current += CHUNK * columnWidth
+        return { startSerial: w.startSerial - step, columnCount: MAX_COLS }
       }
-      pendingScrollDeltaRef.current += CHUNK * dayWidth
+      pendingScrollDeltaRef.current += CHUNK * columnWidth
       return {
-        startSerial: w.startSerial - CHUNK,
+        startSerial: w.startSerial - step,
         columnCount: w.columnCount + CHUNK,
       }
     })
-  }, [dayWidth])
+  }, [CHUNK, MAX_COLS, columnUnitDays, columnWidth])
 
   const appendChunk = useCallback(() => {
+    const step = CHUNK * columnUnitDays
     setWin((w) => {
       if (w.columnCount >= MAX_COLS) {
-        pendingScrollDeltaRef.current -= CHUNK * dayWidth
-        return { startSerial: w.startSerial + CHUNK, columnCount: MAX_COLS }
+        pendingScrollDeltaRef.current -= CHUNK * columnWidth
+        return { startSerial: w.startSerial + step, columnCount: MAX_COLS }
       }
       return {
         startSerial: w.startSerial,
         columnCount: w.columnCount + CHUNK,
       }
     })
-  }, [dayWidth])
+  }, [CHUNK, MAX_COLS, columnUnitDays, columnWidth])
 
   const onScroll = useCallback(
     (e: UIEvent<HTMLDivElement>) => {
@@ -136,9 +175,6 @@ export function useVirtualInfiniteTimelineScroll({
         typeof performance !== 'undefined' ? performance.now() : Date.now()
       if (now - extendCooldownRef.current < 40) return
 
-      // Só estende o lado para onde o usuário está rolando. Do contrário, com
-      // scrollLeft inicial 0 (< THRESH), qualquer rolagem para a direita disparava
-      // prepend e a timeline “pulava” vários dias.
       if (scrollLeft < THRESH && delta < 0) {
         extendCooldownRef.current = now
         prependChunk()
@@ -158,17 +194,34 @@ export function useVirtualInfiniteTimelineScroll({
   }, [applyPendingScroll, startSerial, columnCount])
 
   useEffect(() => {
+    const base =
+      initialStartSerialProp ?? defaultInitialStartSerial(columnUnitDays)
+    const startSerial0 =
+      columnUnitDays === 7 ? startOfIsoWeekSerial(base) : base
+    const columnCount0 =
+      initialColumnCountProp ?? defaultInitialColumnCount(columnUnitDays)
+    setWin({ startSerial: startSerial0, columnCount: columnCount0 })
     const el = scrollRef.current
-    if (!el) return
-    const prev = prevDayWidthRef.current
-    if (prev !== dayWidth && prev > 0) {
-      el.scrollLeft = (el.scrollLeft * dayWidth) / prev
+    if (el) {
+      el.scrollLeft = 0
+      prevScrollLeftRef.current = 0
+      readMetrics(el)
+    }
+    bump()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao trocar escala (viewResetKey)
+  }, [viewResetKey])
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    const prev = prevColumnWidthRef.current
+    if (el && prev !== columnWidth && prev > 0) {
+      el.scrollLeft = (el.scrollLeft * columnWidth) / prev
       prevScrollLeftRef.current = el.scrollLeft
       readMetrics(el)
       bump()
     }
-    prevDayWidthRef.current = dayWidth
-  }, [dayWidth, readMetrics, bump])
+    prevColumnWidthRef.current = columnWidth
+  }, [columnWidth, readMetrics, bump])
 
   useLayoutEffect(() => {
     const el = scrollRef.current
@@ -181,21 +234,21 @@ export function useVirtualInfiniteTimelineScroll({
 
   const { firstCol, lastCol } = useMemo(() => {
     const { left, vw } = metricsRef.current
-    if (columnCount <= 0 || dayWidth <= 0) {
+    if (columnCount <= 0 || columnWidth <= 0) {
       return { firstCol: 0, lastCol: -1 }
     }
     const first = clamp(
-      Math.floor(left / dayWidth) - BUFFER,
+      Math.floor(left / columnWidth) - BUFFER,
       0,
       columnCount - 1,
     )
     const last = clamp(
-      Math.ceil((left + vw) / dayWidth) + BUFFER,
+      Math.ceil((left + vw) / columnWidth) + BUFFER,
       0,
       columnCount - 1,
     )
     return { firstCol: first, lastCol: last }
-  }, [tick, columnCount, dayWidth])
+  }, [tick, columnCount, columnWidth])
 
   const visibleColIndices = useMemo(() => {
     if (lastCol < firstCol) return []
@@ -207,21 +260,21 @@ export function useVirtualInfiniteTimelineScroll({
   const monthNavLabel = useMemo(() => {
     const { left, vw } = metricsRef.current
     const mid = left + vw / 2
-    const col = clamp(Math.floor(mid / dayWidth), 0, Math.max(0, columnCount - 1))
-    const serial = startSerial + col
+    const col = clamp(Math.floor(mid / columnWidth), 0, Math.max(0, columnCount - 1))
+    const serial = startSerial + col * columnUnitDays
     return formatMonthYearPt(serialToLocalDate(serial))
-  }, [tick, startSerial, columnCount, dayWidth])
+  }, [tick, startSerial, columnCount, columnWidth, columnUnitDays])
 
   const shiftViewportByDays = useCallback(
     (deltaDays: number) => {
       const el = scrollRef.current
       if (!el) return
-      el.scrollLeft += deltaDays * dayWidth
+      el.scrollLeft += deltaDays * pixelsPerDay
       prevScrollLeftRef.current = el.scrollLeft
       readMetrics(el)
       bump()
     },
-    [bump, dayWidth, readMetrics],
+    [bump, pixelsPerDay, readMetrics],
   )
 
   return {
@@ -230,19 +283,22 @@ export function useVirtualInfiniteTimelineScroll({
     startSerial,
     columnCount,
     totalWidth,
-    dayWidth,
+    columnWidth,
+    columnUnitDays,
+    pixelsPerDay,
     firstCol,
     lastCol,
     visibleColIndices,
-    /** Serial inclusivo da primeira coluna virtualizada (buffer). */
     visibleStartSerial:
-      lastCol >= firstCol ? startSerial + firstCol : startSerial,
-    /** Serial inclusivo da última coluna virtualizada (buffer). */
+      lastCol >= firstCol ? startSerial + firstCol * columnUnitDays : startSerial,
     visibleEndSerial:
-      lastCol >= firstCol ? startSerial + lastCol : startSerial,
+      lastCol >= firstCol
+        ? startSerial + lastCol * columnUnitDays + (columnUnitDays - 1)
+        : startSerial,
     monthNavLabel,
     shiftViewportByDays,
-    getSerialForColumn: (col: number) => startSerial + col,
-    getDateForColumn: (col: number) => serialToLocalDate(startSerial + col),
+    getSerialForColumn: (col: number) => startSerial + col * columnUnitDays,
+    getDateForColumn: (col: number) =>
+      serialToLocalDate(startSerial + col * columnUnitDays),
   }
 }

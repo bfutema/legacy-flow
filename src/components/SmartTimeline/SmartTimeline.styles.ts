@@ -216,8 +216,10 @@ export const GanttProjectLaneRow = styled.div`
   ${laneSticky};
   display: flex;
   align-items: center;
-  padding: 0.45rem 0.75rem;
+  padding: 0.35rem 0.75rem;
   min-height: ${TIMELINE_UI.projectRowHeight}px;
+  max-height: ${TIMELINE_UI.projectRowHeight}px;
+  box-sizing: border-box;
 `
 
 export const GanttProjectLaneCollapsed = styled.div`
@@ -226,7 +228,9 @@ export const GanttProjectLaneCollapsed = styled.div`
   justify-content: center;
   width: 100%;
   min-width: 0;
-  min-height: ${TIMELINE_UI.projectRowHeight - 8}px;
+  min-height: ${TIMELINE_UI.projectRowHeight}px;
+  max-height: ${TIMELINE_UI.projectRowHeight}px;
+  box-sizing: border-box;
 `
 
 export const GanttLaneProjectTitle = styled.div`
@@ -234,6 +238,9 @@ export const GanttLaneProjectTitle = styled.div`
   font-weight: 700;
   color: ${({ theme }) => theme.text};
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `
 
 /** Título do projeto + ação discreta (alocar colaborador). */
@@ -242,19 +249,28 @@ export const GanttProjectTitleRow = styled.div`
   align-items: center;
   gap: 0.35rem;
   min-width: 0;
+  width: 100%;
 `
 
+/** Projeto: nome na primeira linha, período abaixo. */
 export const GanttProjectLaneStack = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 0.1rem;
   min-width: 0;
+  flex: 1;
 `
 
 export const GanttLaneRange = styled.div`
   font-size: 0.7rem;
+  font-weight: 500;
   color: ${({ theme }) => theme.textMuted};
-  margin-top: 0.15rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
 `
 
 export const GanttAllocateTriggerBtn = styled.button<{ $open?: boolean }>`
@@ -464,6 +480,8 @@ export const GanttLaneUserRow = styled.div<{ $laneCollapsed?: boolean }>`
   padding: 0.35rem 0.45rem 0.35rem
     calc(0.75rem + ${TIMELINE_UI.laneUserExtraIndentPx}px);
   min-height: ${TIMELINE_UI.userRowHeight}px;
+  max-height: ${TIMELINE_UI.userRowHeight}px;
+  box-sizing: border-box;
 
   ${({ $laneCollapsed }) =>
     $laneCollapsed &&
@@ -705,6 +723,30 @@ export const GanttTimeDowCell = styled.div<{ $weekend: boolean; $isToday?: boole
         $isToday ? theme.primary : theme.text};
     }
   }
+`
+
+/** Uma coluna = uma semana (intervalo no cabeçalho). */
+export const GanttTimeWeekCell = styled.div<{ $isToday?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 2px 4px;
+  color: ${({ theme, $isToday }) => ($isToday ? theme.primary : theme.text)};
+  border-right: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => ganttWeekendSurface(theme, false)};
+  box-sizing: border-box;
+  hyphens: auto;
+  overflow: hidden;
+
+  ${({ $isToday, theme }) =>
+    $isToday &&
+    css`
+      box-shadow: inset 0 -2px 0 ${theme.primary};
+    `}
 `
 
 export const GanttTrackArea = styled.div<{ $minWidth: number }>`
