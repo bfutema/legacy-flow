@@ -91,6 +91,7 @@ import {
   CardinalitySelect,
   FlowHost,
   FlowPersistHint,
+  FlowSqlScriptsLink,
   FsButton,
   ModelingControlsStrip,
   ModelingPageRoot,
@@ -1024,6 +1025,11 @@ export function DatabaseModeling() {
             O diagrama é salvo automaticamente neste navegador ao mover tabelas, editar
             campos ou relações.
           </FlowPersistHint>
+        ) : null}
+        {!theaterMode ? (
+          <FlowSqlScriptsLink to={`/projects/${project.id}/sql-scripts`}>
+            Scripts SQL salvos neste projeto (editor Monaco) →
+          </FlowSqlScriptsLink>
         ) : null}
         <DatabaseFlowCanvas
           key={project.id}

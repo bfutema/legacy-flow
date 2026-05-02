@@ -102,6 +102,16 @@ function crumbsForPath(pathname: string): CrumbItem[] {
     ]
   }
 
+  const projSqlScripts = normalized.match(/^\/projects\/([^/]+)\/sql-scripts$/)
+  if (projSqlScripts) {
+    const p = resolveProjectById(projSqlScripts[1])
+    return [
+      { label: 'Projetos', path: '/projects' },
+      { label: p?.name ?? 'Projeto', path: `/projects/${projSqlScripts[1]}` },
+      { label: 'Scripts SQL' },
+    ]
+  }
+
   const projArchitecture = normalized.match(/^\/projects\/([^/]+)\/architecture$/)
   if (projArchitecture) {
     const p = resolveProjectById(projArchitecture[1])
@@ -164,10 +174,16 @@ function siblingPagesForPath(pathname: string): CrumbItem[] | null {
   const normalized = pathname.replace(/\/$/, '') || '/'
   const model = normalized.match(/^\/projects\/([^/]+)\/modeling$/)
   const arch = normalized.match(/^\/projects\/([^/]+)\/architecture$/)
+  const sqlScripts = normalized.match(/^\/projects\/([^/]+)\/sql-scripts$/)
   const filesHub = normalized.match(/^\/projects\/([^/]+)\/subproject-files$/)
   const workspace = normalized.match(/^\/projects\/([^/]+)\/workspace-files$/)
 
-  const projectId = model?.[1] ?? arch?.[1] ?? filesHub?.[1] ?? workspace?.[1]
+  const projectId =
+    model?.[1] ??
+    arch?.[1] ??
+    sqlScripts?.[1] ??
+    filesHub?.[1] ??
+    workspace?.[1]
   if (!projectId) return null
 
   const filesEntry = isProjectMonorepo(projectId)
@@ -182,6 +198,7 @@ function siblingPagesForPath(pathname: string): CrumbItem[] | null {
 
   return [
     { label: 'Modelagem', path: `/projects/${projectId}/modeling` },
+    { label: 'Scripts SQL', path: `/projects/${projectId}/sql-scripts` },
     { label: 'Arquitetura', path: `/projects/${projectId}/architecture` },
     filesEntry,
   ]

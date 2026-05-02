@@ -498,6 +498,58 @@ export const WorkspaceNavLinkModeling = styled(Link)`
   }
 `
 
+export const WorkspaceNavLinkSqlScripts = styled(Link)`
+  ${workspacePremiumShell}
+  animation-delay: 0.11s;
+
+  &:focus-visible {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 3px;
+  }
+
+  &::before {
+    background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+    animation-delay: 0.78s;
+  }
+
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #0ea5e9 22%, ${({ theme }) => theme.surface}) 0%,
+    ${({ theme }) => theme.surface} 58%
+  );
+
+  &:hover {
+    transform: translateY(-5px);
+    border-color: #0ea5e9;
+    box-shadow:
+      0 14px 32px color-mix(in srgb, #0ea5e9 18%, transparent),
+      0 4px 12px rgba(15, 23, 42, 0.08);
+
+    ${WorkspaceNavChevron} {
+      transform: translateX(4px);
+      color: #0ea5e9;
+    }
+
+    ${WorkspaceNavIconWrap} {
+      color: #0ea5e9;
+
+      svg {
+        transform: scale(1.06);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover ${WorkspaceNavChevron} {
+      transform: none;
+    }
+
+    &:hover ${WorkspaceNavIconWrap} svg {
+      transform: none;
+    }
+  }
+`
+
 export const WorkspaceNavLinkArchitecture = styled(Link)`
   ${workspacePremiumShell}
   animation-delay: 0.14s;
@@ -602,7 +654,7 @@ export const WorkspaceNavLinkFiles = styled(Link)`
   }
 `
 
-export type WorkspaceNavLockedVariant = 'modeling' | 'architecture'
+export type WorkspaceNavLockedVariant = 'modeling' | 'architecture' | 'sqlScripts'
 
 export const WorkspaceNavRowLocked = styled.div<{ $variant: WorkspaceNavLockedVariant }>`
   position: relative;
@@ -635,7 +687,9 @@ export const WorkspaceNavRowLocked = styled.div<{ $variant: WorkspaceNavLockedVa
             ${theme.primary},
             color-mix(in srgb, ${theme.primary} 70%, white)
           )`
-        : 'linear-gradient(90deg, #14b8a6, #5eead4)'};
+        : $variant === 'sqlScripts'
+          ? 'linear-gradient(90deg, #0ea5e9, #38bdf8)'
+          : 'linear-gradient(90deg, #14b8a6, #5eead4)'};
   }
 
   background: ${({ $variant, theme }) =>
@@ -645,11 +699,17 @@ export const WorkspaceNavRowLocked = styled.div<{ $variant: WorkspaceNavLockedVa
           ${theme.primaryMuted} 0%,
           ${theme.surface} 55%
         )`
-      : `linear-gradient(
-          135deg,
-          color-mix(in srgb, #14b8a6 18%, ${theme.surface}) 0%,
-          ${theme.surface} 58%
-        )`};
+      : $variant === 'sqlScripts'
+        ? `linear-gradient(
+            135deg,
+            color-mix(in srgb, #0ea5e9 18%, ${theme.surface}) 0%,
+            ${theme.surface} 58%
+          )`
+        : `linear-gradient(
+            135deg,
+            color-mix(in srgb, #14b8a6 18%, ${theme.surface}) 0%,
+            ${theme.surface} 58%
+          )`};
 `
 
 export const AllocationRows = styled.div`

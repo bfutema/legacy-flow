@@ -4,6 +4,7 @@ import {
   WorkspaceNavLinkArchitecture,
   WorkspaceNavLinkFiles,
   WorkspaceNavLinkModeling,
+  WorkspaceNavLinkSqlScripts,
   WorkspaceNavList,
   WorkspaceNavRowBody,
   WorkspaceNavRowDesc,
@@ -57,6 +58,20 @@ const iconFiles = (
   </svg>
 )
 
+const iconSql = (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden
+  >
+    <path d="M4 7h4v10H4zM10 5h4v14h-4zM16 9h4v6h-4z" />
+  </svg>
+)
+
 type ProjectWorkspaceNavProps = {
   projectId: string
   isMonorepo: boolean
@@ -88,6 +103,28 @@ export function ProjectWorkspaceNav({
             <WorkspaceNavRowTitle>Modelagem do banco de dados</WorkspaceNavRowTitle>
             <WorkspaceNavRowDesc>
               Peça permissão para editar projeto e modelagem.
+            </WorkspaceNavRowDesc>
+          </WorkspaceNavRowBody>
+        </WorkspaceNavRowLocked>
+      )}
+      {canUpdateProject ? (
+        <WorkspaceNavLinkSqlScripts to={`/projects/${projectId}/sql-scripts`}>
+          <WorkspaceNavIconWrap>{iconSql}</WorkspaceNavIconWrap>
+          <WorkspaceNavRowBody>
+            <WorkspaceNavRowTitle>Scripts SQL do projeto</WorkspaceNavRowTitle>
+            <WorkspaceNavRowDesc>
+              Biblioteca com editor Monaco: salve e reutilize consultas e rotinas.
+            </WorkspaceNavRowDesc>
+          </WorkspaceNavRowBody>
+          <WorkspaceNavChevron aria-hidden>→</WorkspaceNavChevron>
+        </WorkspaceNavLinkSqlScripts>
+      ) : (
+        <WorkspaceNavRowLocked $variant="sqlScripts">
+          <WorkspaceNavIconWrap>{iconSql}</WorkspaceNavIconWrap>
+          <WorkspaceNavRowBody>
+            <WorkspaceNavRowTitle>Scripts SQL do projeto</WorkspaceNavRowTitle>
+            <WorkspaceNavRowDesc>
+              Disponível com permissão de edição do projeto.
             </WorkspaceNavRowDesc>
           </WorkspaceNavRowBody>
         </WorkspaceNavRowLocked>

@@ -12,6 +12,7 @@ import { NewProject } from './pages/NewProject'
 import { ProjectArchitecture } from './pages/ProjectArchitecture'
 import { ProjectDetail } from './pages/ProjectDetail'
 import { ProjectSettings } from './pages/ProjectSettings'
+import { ProjectSqlScripts } from './pages/ProjectSqlScripts'
 import { SubprojectFilesHubPage } from './pages/subprojectFiles/SubprojectFilesHubPage'
 import { SubprojectFilesViewPage } from './pages/subprojectFiles/SubprojectFilesViewPage'
 import { WorkspaceFilesPage } from './pages/subprojectFiles/WorkspaceFilesPage'
@@ -110,6 +111,14 @@ export default function App() {
                 element={
                   <RequireAbility I="update" a="Project">
                     <DatabaseModeling />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/:projectId/sql-scripts"
+                element={
+                  <RequireAbility I="update" a="Project">
+                    <ProjectSqlScripts />
                   </RequireAbility>
                 }
               />

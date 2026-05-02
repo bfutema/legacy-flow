@@ -155,6 +155,24 @@ export const FlowPersistHint = styled.p`
   }
 `
 
+export const FlowSqlScriptsLink = styled(Link)`
+  display: inline-block;
+  margin: -0.5rem 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.primary};
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  @media ${ADMIN_MOBILE_MEDIA} {
+    margin-bottom: 0.65rem;
+    font-size: 0.75rem;
+  }
+`
+
 export const FlowHost = styled.div<{ $theater?: boolean }>`
   width: 100%;
   height: clamp(420px, calc(100vh - 14rem), 820px);
