@@ -602,6 +602,58 @@ export const WorkspaceNavLinkArchitecture = styled(Link)`
   }
 `
 
+export const WorkspaceNavLinkApf = styled(Link)`
+  ${workspacePremiumShell}
+  animation-delay: 0.17s;
+
+  &:focus-visible {
+    outline: 2px solid #ca8a04;
+    outline-offset: 3px;
+  }
+
+  &::before {
+    background: linear-gradient(90deg, #ca8a04, #fbbf24);
+    animation-delay: 0.82s;
+  }
+
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #ca8a04 22%, ${({ theme }) => theme.surface}) 0%,
+    ${({ theme }) => theme.surface} 58%
+  );
+
+  &:hover {
+    transform: translateY(-5px);
+    border-color: #ca8a04;
+    box-shadow:
+      0 14px 32px color-mix(in srgb, #ca8a04 18%, transparent),
+      0 4px 12px rgba(15, 23, 42, 0.08);
+
+    ${WorkspaceNavChevron} {
+      transform: translateX(4px);
+      color: #ca8a04;
+    }
+
+    ${WorkspaceNavIconWrap} {
+      color: #ca8a04;
+
+      svg {
+        transform: scale(1.06);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover ${WorkspaceNavChevron} {
+      transform: none;
+    }
+
+    &:hover ${WorkspaceNavIconWrap} svg {
+      transform: none;
+    }
+  }
+`
+
 export const WorkspaceNavLinkFiles = styled(Link)`
   ${workspacePremiumShell}
   animation-delay: 0.2s;

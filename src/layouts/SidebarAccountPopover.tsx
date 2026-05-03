@@ -13,6 +13,7 @@ import {
   HiArrowRightOnRectangle,
   HiCodeBracketSquare,
   HiKey,
+  HiSquare2Stack,
   HiUserCircle,
 } from 'react-icons/hi2'
 import { useNavigate } from 'react-router-dom'
@@ -80,6 +81,7 @@ export function SidebarAccountPopover({ collapsed, mobileDrawer, onNavigate }: P
       : '/account/profile'
 
   const canJsonViewer = ability.can('read', 'JsonViewer')
+  const canFlowDesign = ability.can('read', 'FlowDesign')
 
   const close = useCallback(() => setOpen(false), [])
 
@@ -214,21 +216,37 @@ export function SidebarAccountPopover({ collapsed, mobileDrawer, onNavigate }: P
             </ToolsMenuItemIcon>
             Alterar senha
           </ToolsMenuItemLink>
-          {canJsonViewer ? (
+          {canJsonViewer || canFlowDesign ? (
             <>
               <ToolsMenuPanelTitle>Ferramentas globais</ToolsMenuPanelTitle>
-              <ToolsMenuItemLink
-                to="/tools/json-viewer"
-                onClick={() => {
-                  close()
-                  closeIfDrawer()
-                }}
-              >
-                <ToolsMenuItemIcon>
-                  <HiCodeBracketSquare {...icNav} />
-                </ToolsMenuItemIcon>
-                JSON Viewer
-              </ToolsMenuItemLink>
+              {canJsonViewer ? (
+                <ToolsMenuItemLink
+                  to="/tools/json-viewer"
+                  onClick={() => {
+                    close()
+                    closeIfDrawer()
+                  }}
+                >
+                  <ToolsMenuItemIcon>
+                    <HiCodeBracketSquare {...icNav} />
+                  </ToolsMenuItemIcon>
+                  JSON Viewer
+                </ToolsMenuItemLink>
+              ) : null}
+              {canFlowDesign ? (
+                <ToolsMenuItemLink
+                  to="/tools/flow-design"
+                  onClick={() => {
+                    close()
+                    closeIfDrawer()
+                  }}
+                >
+                  <ToolsMenuItemIcon>
+                    <HiSquare2Stack {...icNav} />
+                  </ToolsMenuItemIcon>
+                  Flow Design
+                </ToolsMenuItemLink>
+              ) : null}
             </>
           ) : null}
           <AccountMenuDivider />

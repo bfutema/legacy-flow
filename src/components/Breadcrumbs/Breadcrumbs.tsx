@@ -28,6 +28,7 @@ const ROUTE_TREE: Record<string, CrumbItem[]> = {
   '/organogram': [{ label: 'Organograma' }],
   '/access-control': [{ label: 'Controle de acesso' }],
   '/tools/json-viewer': [{ label: 'Ferramentas' }, { label: 'JSON Viewer' }],
+  '/tools/flow-design': [{ label: 'Ferramentas' }, { label: 'Flow Design' }],
   '/account/profile': [{ label: 'Conta' }, { label: 'Perfil' }],
   '/account/password': [{ label: 'Conta' }, { label: 'Alterar senha' }],
 }
@@ -125,6 +126,16 @@ function crumbsForPath(pathname: string): CrumbItem[] {
     ]
   }
 
+  const projApf = normalized.match(/^\/projects\/([^/]+)\/apf$/)
+  if (projApf) {
+    const p = resolveProjectById(projApf[1])
+    return [
+      { label: 'Projetos', path: '/projects' },
+      { label: p?.name ?? 'Projeto', path: `/projects/${projApf[1]}` },
+      { label: 'Pontos de função (APF)' },
+    ]
+  }
+
   const projWorkspaceFiles = normalized.match(/^\/projects\/([^/]+)\/workspace-files$/)
   if (projWorkspaceFiles) {
     const p = resolveProjectById(projWorkspaceFiles[1])
@@ -180,13 +191,15 @@ function siblingPagesForPath(pathname: string): CrumbItem[] | null {
   const sqlScripts = normalized.match(/^\/projects\/([^/]+)\/sql-scripts$/)
   const filesHub = normalized.match(/^\/projects\/([^/]+)\/subproject-files$/)
   const workspace = normalized.match(/^\/projects\/([^/]+)\/workspace-files$/)
+  const apf = normalized.match(/^\/projects\/([^/]+)\/apf$/)
 
   const projectId =
     model?.[1] ??
     arch?.[1] ??
     sqlScripts?.[1] ??
     filesHub?.[1] ??
-    workspace?.[1]
+    workspace?.[1] ??
+    apf?.[1]
   if (!projectId) return null
 
   const filesEntry = isProjectMonorepo(projectId)
@@ -203,6 +216,7 @@ function siblingPagesForPath(pathname: string): CrumbItem[] | null {
     { label: 'Modelagem', path: `/projects/${projectId}/modeling` },
     { label: 'Scripts SQL', path: `/projects/${projectId}/sql-scripts` },
     { label: 'Arquitetura', path: `/projects/${projectId}/architecture` },
+    { label: 'Pontos de função (APF)', path: `/projects/${projectId}/apf` },
     filesEntry,
   ]
 }

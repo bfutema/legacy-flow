@@ -9,6 +9,7 @@ import { DatabaseModeling } from './pages/DatabaseModeling'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { Login } from './pages/Login'
 import { NewProject } from './pages/NewProject'
+import { ProjectApfPage } from './pages/ProjectApf/ProjectApfPage'
 import { ProjectArchitecture } from './pages/ProjectArchitecture'
 import { ProjectDetail } from './pages/ProjectDetail'
 import { ProjectSettings } from './pages/ProjectSettings'
@@ -29,6 +30,7 @@ import { ResetPassword } from './pages/ResetPassword'
 import { AccessControl } from './pages/AccessControl'
 import { AccountPassword } from './pages/AccountPassword'
 import { AccountProfile } from './pages/AccountProfile'
+import { FlowDesignStudioPage } from './pages/FlowDesignStudioPage'
 import { JsonViewerPage } from './pages/JsonViewer/JsonViewerPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { RequireAbility } from './routes/RequireAbility'
@@ -134,6 +136,14 @@ export default function App() {
                 }
               />
               <Route
+                path="/projects/:projectId/apf"
+                element={
+                  <RequireAbility I="read" a="Project">
+                    <ProjectApfPage />
+                  </RequireAbility>
+                }
+              />
+              <Route
                 path="/projects/:projectId/subproject-files/:nodeId"
                 element={
                   <RequireAbility I="read" a="Project">
@@ -196,6 +206,14 @@ export default function App() {
                 element={
                   <RequireAbility I="read" a="JsonViewer">
                     <JsonViewerPage />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/tools/flow-design"
+                element={
+                  <RequireAbility I="read" a="FlowDesign">
+                    <FlowDesignStudioPage />
                   </RequireAbility>
                 }
               />

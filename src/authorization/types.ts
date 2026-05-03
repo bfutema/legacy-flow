@@ -18,6 +18,7 @@ export type AppSubject =
   | 'Organogram'
   | 'Security'
   | 'JsonViewer'
+  | 'FlowDesign'
 
 export type AppAbilities = [AppAction, AppSubject]
 
