@@ -19,6 +19,7 @@ const EDITOR_DEFAULT: AppRawRule[] = [
   { action: 'create', subject: 'TaskBoard' },
   { action: 'update', subject: 'TaskBoard' },
   { action: 'read', subject: 'Organogram' },
+  { action: 'read', subject: 'JsonViewer' },
 ]
 
 const VIEWER_DEFAULT: AppRawRule[] = [
@@ -29,12 +30,14 @@ const VIEWER_DEFAULT: AppRawRule[] = [
   { action: 'read', subject: 'Timeline' },
   { action: 'read', subject: 'TaskBoard' },
   { action: 'read', subject: 'Organogram' },
+  { action: 'read', subject: 'JsonViewer' },
 ]
 
 /** Visitante: e-mail não encontrado no diretório após login. */
 export const GUEST_DEFAULT: AppRawRule[] = [
   { action: 'read', subject: 'Dashboard' },
   { action: 'read', subject: 'Project' },
+  { action: 'read', subject: 'JsonViewer' },
 ]
 
 export const DEFAULT_RULES_BY_ROLE: Record<RoleSlug, AppRawRule[]> = {

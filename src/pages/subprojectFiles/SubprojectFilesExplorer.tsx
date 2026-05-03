@@ -17,6 +17,11 @@ import {
   techLabel,
 } from '../../components/ProjectArchitectureCanvas/architectureTechMeta'
 import type { ArchitectureBlockSummary } from './architectureBlocksLoader'
+import {
+  defineFlowMonacoThemes,
+  FLOW_DARK_THEME,
+  FLOW_LIGHT_THEME,
+} from '../../monaco/flowMonacoThemes'
 import { workspaceFilesStorageKey } from '../../persistence/workspaceFilesStorage'
 import { useThemeMode } from '../../contexts/ThemeContext'
 import { useProjectCloud } from '../../hooks/useProjectCloud'
@@ -63,8 +68,6 @@ const EXPLORER_STORAGE_VERSION = 'v1'
 const NO_PATHS_FALLBACK: string[] = []
 const MONACO_EDITOR_THEME_STORAGE_KEY = `flow-monaco-editor-theme:${EXPLORER_STORAGE_VERSION}`
 const DRACULA_DARK_THEME = 'flow-dracula-dark'
-const FLOW_DARK_THEME = 'flow-app-dark'
-const FLOW_LIGHT_THEME = 'flow-app-light'
 type ExplorerEditorTheme = 'dracula' | 'flow'
 
 type ExplorerLocalState = {
@@ -142,6 +145,8 @@ function inferLanguageFromPath(path: string): string {
 }
 
 function defineMonacoThemes(monaco: Parameters<NonNullable<React.ComponentProps<typeof Editor>['beforeMount']>>[0]) {
+  defineFlowMonacoThemes(monaco)
+
   monaco.editor.defineTheme(DRACULA_DARK_THEME, {
     base: 'vs-dark',
     inherit: true,
@@ -165,58 +170,6 @@ function defineMonacoThemes(monaco: Parameters<NonNullable<React.ComponentProps<
       'editor.lineHighlightBackground': '#2E3140',
       'editorIndentGuide.background1': '#3B3E4F',
       'editorIndentGuide.activeBackground1': '#6272A4',
-    },
-  })
-
-  monaco.editor.defineTheme(FLOW_DARK_THEME, {
-    base: 'vs-dark',
-    inherit: true,
-    rules: [
-      { token: 'comment', foreground: '64748B' },
-      { token: 'keyword', foreground: 'A78BFA' },
-      { token: 'string', foreground: '34D399' },
-      { token: 'number', foreground: '38BDF8' },
-      { token: 'type.identifier', foreground: 'F9A8D4' },
-      { token: 'identifier', foreground: 'E2E8F0' },
-      { token: 'delimiter', foreground: 'CBD5E1' },
-    ],
-    colors: {
-      'editor.background': '#0B1220',
-      'editor.foreground': '#E2E8F0',
-      'editorLineNumber.foreground': '#64748B',
-      'editorLineNumber.activeForeground': '#A78BFA',
-      'editorCursor.foreground': '#A78BFA',
-      'editor.selectionBackground': '#1E293B',
-      'editor.inactiveSelectionBackground': '#172033',
-      'editor.lineHighlightBackground': '#0F172A',
-      'editorIndentGuide.background1': '#1E293B',
-      'editorIndentGuide.activeBackground1': '#475569',
-    },
-  })
-
-  monaco.editor.defineTheme(FLOW_LIGHT_THEME, {
-    base: 'vs',
-    inherit: true,
-    rules: [
-      { token: 'comment', foreground: '64748B' },
-      { token: 'keyword', foreground: '7C3AED' },
-      { token: 'string', foreground: '059669' },
-      { token: 'number', foreground: '0284C7' },
-      { token: 'type.identifier', foreground: 'DB2777' },
-      { token: 'identifier', foreground: '0F172A' },
-      { token: 'delimiter', foreground: '334155' },
-    ],
-    colors: {
-      'editor.background': '#F8FAFC',
-      'editor.foreground': '#0F172A',
-      'editorLineNumber.foreground': '#94A3B8',
-      'editorLineNumber.activeForeground': '#7C3AED',
-      'editorCursor.foreground': '#7C3AED',
-      'editor.selectionBackground': '#E2E8F0',
-      'editor.inactiveSelectionBackground': '#EEF2F7',
-      'editor.lineHighlightBackground': '#F1F5F9',
-      'editorIndentGuide.background1': '#E2E8F0',
-      'editorIndentGuide.activeBackground1': '#CBD5E1',
     },
   })
 

@@ -27,6 +27,9 @@ const ROUTE_TREE: Record<string, CrumbItem[]> = {
   '/tasks': [{ label: 'Tarefas' }],
   '/organogram': [{ label: 'Organograma' }],
   '/access-control': [{ label: 'Controle de acesso' }],
+  '/tools/json-viewer': [{ label: 'Ferramentas' }, { label: 'JSON Viewer' }],
+  '/account/profile': [{ label: 'Conta' }, { label: 'Perfil' }],
+  '/account/password': [{ label: 'Conta' }, { label: 'Alterar senha' }],
 }
 
 function usersNewCrumbs(): CrumbItem[] {

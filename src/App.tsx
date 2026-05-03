@@ -27,6 +27,9 @@ import { UserProfile } from './pages/UserProfile'
 import { Users } from './pages/Users'
 import { ResetPassword } from './pages/ResetPassword'
 import { AccessControl } from './pages/AccessControl'
+import { AccountPassword } from './pages/AccountPassword'
+import { AccountProfile } from './pages/AccountProfile'
+import { JsonViewerPage } from './pages/JsonViewer/JsonViewerPage'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { RequireAbility } from './routes/RequireAbility'
 
@@ -183,6 +186,16 @@ export default function App() {
                 element={
                   <RequireAbility I="read" a="TaskBoard">
                     <TaskBoard />
+                  </RequireAbility>
+                }
+              />
+              <Route path="/account/profile" element={<AccountProfile />} />
+              <Route path="/account/password" element={<AccountPassword />} />
+              <Route
+                path="/tools/json-viewer"
+                element={
+                  <RequireAbility I="read" a="JsonViewer">
+                    <JsonViewerPage />
                   </RequireAbility>
                 }
               />

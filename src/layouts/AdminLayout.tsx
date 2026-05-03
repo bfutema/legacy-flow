@@ -26,7 +26,8 @@ export function AdminLayout() {
   const contentFlush =
     normalizedPath === '/allocations' ||
     normalizedPath === '/tasks' ||
-    normalizedPath === '/organogram'
+    normalizedPath === '/organogram' ||
+    normalizedPath.startsWith('/tools/')
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 

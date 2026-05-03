@@ -17,6 +17,7 @@ export type AppSubject =
   | 'TaskBoard'
   | 'Organogram'
   | 'Security'
+  | 'JsonViewer'
 
 export type AppAbilities = [AppAction, AppSubject]
 
