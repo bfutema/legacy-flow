@@ -12,6 +12,7 @@ import { NewProject } from './pages/NewProject'
 import { ProjectApfPage } from './pages/ProjectApf/ProjectApfPage'
 import { ProjectArchitecture } from './pages/ProjectArchitecture'
 import { ProjectDetail } from './pages/ProjectDetail'
+import { ProjectEnvVarsPage } from './pages/ProjectEnvVars/ProjectEnvVarsPage'
 import { ProjectSettings } from './pages/ProjectSettings'
 import { ProjectSqlScripts } from './pages/ProjectSqlScripts'
 import { SubprojectFilesHubPage } from './pages/subprojectFiles/SubprojectFilesHubPage'
@@ -108,6 +109,14 @@ export default function App() {
                 element={
                   <RequireAbility I="read" a="Project">
                     <ProjectSettings />
+                  </RequireAbility>
+                }
+              />
+              <Route
+                path="/projects/:projectId/environment"
+                element={
+                  <RequireAbility I="read" a="Project">
+                    <ProjectEnvVarsPage />
                   </RequireAbility>
                 }
               />

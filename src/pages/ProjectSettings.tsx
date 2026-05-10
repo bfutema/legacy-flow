@@ -1,6 +1,6 @@
 import { useAbility } from '@casl/react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   isProjectCloudProvider,
   PROJECT_CLOUD_LABELS,
@@ -362,6 +362,24 @@ export function ProjectSettings() {
                   <option value="multi">Repositórios separados</option>
                 </DbSelect>
               </PanelDbSettingRow>
+            </SettingsFieldBlock>
+          </div>
+
+          <PanelDivider />
+
+          <div>
+            <PanelSectionLabel>Deploy e backend</PanelSectionLabel>
+            <SettingsFieldHint style={{ marginTop: '0.65rem' }}>
+              Cadastre chaves e valores por projeto; no futuro o backend poderá receber esse
+              conjunto ao criar serviços. Os dados ficam neste navegador até existir API.
+            </SettingsFieldHint>
+            <SettingsFieldBlock style={{ marginTop: '0.75rem' }}>
+              <Link
+                to={`/projects/${project.id}/environment`}
+                style={{ fontWeight: 700, fontSize: '0.9rem' }}
+              >
+                Variáveis de ambiente →
+              </Link>
             </SettingsFieldBlock>
           </div>
 

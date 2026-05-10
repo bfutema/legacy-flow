@@ -19,6 +19,7 @@ import {
   type NewProjectInput,
 } from '../persistence/userProjectsStorage'
 import { projectApfStorageKey } from '../persistence/projectApfStorage'
+import { removeProjectEnvVars } from '../persistence/projectEnvVarsStorage'
 import { workspaceFilesStorageKey } from '../persistence/workspaceFilesStorage'
 
 /** Cor de marca do projeto (hex). Usada no header dos nós de tabela na modelagem. */
@@ -139,6 +140,7 @@ function purgeProjectLocalPersistence(projectId: string): void {
     localStorage.removeItem(projectMonorepoStorageKey(projectId))
     localStorage.removeItem(workspaceFilesStorageKey(projectId))
     localStorage.removeItem(projectApfStorageKey(projectId))
+    removeProjectEnvVars(projectId)
     const subPrefix = subprojectFilesKeyPrefix(projectId)
     for (let i = localStorage.length - 1; i >= 0; i -= 1) {
       const k = localStorage.key(i)
