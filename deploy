@@ -3,6 +3,11 @@
 # Deploy do Vite (dist/) para GitHub Pages via branch gh-pages
 # Uso: ./deploy
 #
+# Repositório renomeado no GitHub (ex.: legacy-flow): atualize o remote para o novo nome,
+# ou o inferidor abaixo usará o slug errado — ex.:
+#   git remote set-url origin git@github.com:OWNER/legacy-flow.git
+# Sem remote válido, defina manualmente: VITE_BASE_PATH="/legacy-flow/" ./deploy
+#
 # Variáveis opcionais:
 #   VITE_BASE_PATH="/<repo>/"   # base do Vite (Project Pages); user.github.io → "/"
 #   GHP_BRANCH="gh-pages"
